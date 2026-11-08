@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nubize · Student Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --blue:#1473f5; --green:#19b84a; --bg:#f6f7f9; --line:#eceef1; --mut:#6b7280; --star:#f5b971; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body { background: #e9ecef; font-family: "Plus Jakarta Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; display:flex; justify-content:center; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { background: none; border: 0; cursor: pointer; }
+
+  .app { width: 100%; max-width: 460px; height: 100vh; height: 100dvh; background: #fff; position: relative; overflow: hidden; box-shadow: 0 0 40px rgba(0,0,0,.08); }
+  .screen { display: none; position: absolute; inset: 0 0 76px 0; overflow-y: auto; background: var(--bg); }
+  .screen.on { display: block; animation: fade .25s ease; }
+  #welcome, #splash, #signin, #signup, #forgot { inset: 0; background: #fff; }
+  #welcome { overflow: hidden; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: none; } }
+
+  /* Top bars */
+  .top { background:#fff; height: 70px; display:flex; align-items:center; justify-content:space-between; padding: 0 18px; position: sticky; top: 0; z-index: 5; }
+  .top .title { text-align:center; line-height:1.25; }
+  .top .title small { display:block; font-size:13px; color: var(--mut); }
+  .top .title b { font-size:18px; font-weight:600; }
+  .ib { width: 36px; height: 36px; display:flex; align-items:center; justify-content:center; border-radius: 50%; position: relative; }
+  .ib:active { background: #f0f1f3; }
+  .ib i { position:absolute; top:6px; right:7px; width:9px; height:9px; border-radius:50%; background:#f0392b; border:1.5px solid #fff; }
+  .ib i.off { display: none; }
+
+  /* Stats */
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:12px 12px 0; }
+  .stat { background:#fff; border-radius:8px; padding:14px 14px; text-align:left; transition: transform .15s, box-shadow .15s; }
+  @media (hover:hover) { .stat:hover { box-shadow: 0 4px 14px rgba(20,115,245,.12); transform: translateY(-1px); } }
+  .stat:active { transform: scale(.98); }
+  .stat .row { display:flex; justify-content:space-between; align-items:center; font-size:14px; color:var(--mut); }
+  .stat b { display:block; margin-top:8px; font-size:24px; font-weight:600; color:#111; }
+
+  .panel { background:#fff; margin:14px 12px 0; border-radius:8px; padding:14px 12px; }
+  .panel .head { display:flex; justify-content:space-between; align-items:center; }
+  .panel h4 { font-size:16px; font-weight:600; }
+  .legend { display:flex; gap:12px; font-size:12px; color:var(--mut); }
+  .legend span::before { content:""; display:inline-block; width:12px; height:12px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
+  .legend .a::before { background: var(--blue); } .legend .q::before { background: var(--green); }
+  .info { font-size: 12.5px; color: var(--mut); margin-top: 6px; min-height: 18px; }
+  .info b { color:#111; }
+  .chart { position:relative; height:262px; margin-top:8px; }
+  .ylab { position:absolute; left:0; width:30px; text-align:right; font-size:12px; color:var(--mut); transform: translateY(-50%); }
+  .gl { position:absolute; left:40px; right:4px; height:1px; background:#f0f1f3; }
+  .plot { position:absolute; left:40px; right:4px; top:0; height:232px; display:flex; justify-content:space-around; align-items:flex-end; }
+  .col-b { flex:1; height:100%; display:flex; align-items:flex-end; justify-content:center; cursor:pointer; position:relative; }
+  .col-b:hover::before, .col-b.sel::before { content:""; position:absolute; inset:0 4px; background: rgba(20,115,245,.06); border-radius:4px; }
+  .bar { width:17px; background:var(--blue); border-radius:3px 3px 0 0; position:relative; height:0; transition: height .7s cubic-bezier(.2,.8,.2,1); }
+  .bar i { position:absolute; bottom:0; left:0; right:0; background:var(--green); display:block; }
+  .xl { position:absolute; top:244px; left:40px; right:4px; display:flex; justify-content:space-around; font-size:12px; color:var(--mut); }
+  .xl span { flex:1; text-align:center; }
+
+  .sec { padding:18px 16px 0 20px; display:flex; justify-content:space-between; align-items:center; font-size:16px; font-weight:600; }
+  .sec button { font-size:12px; color:var(--blue); font-weight:500; cursor:pointer; }
+  .rcards { display:flex; gap:12px; padding:10px 12px 16px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width: none; }
+  .rcards::-webkit-scrollbar { display:none; }
+  .rc { background:#fff; border-radius:8px; padding:14px; width:266px; flex:none; scroll-snap-align:start; cursor:pointer; text-align:left; }
+  .rc:active { background:#fafbfc; }
+
+  /* Candidate bits */
+  .av { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; }
+  .cand { display:flex; gap:10px; align-items:flex-start; cursor:pointer; }
+  .cand > div:nth-child(2) { min-width: 0; flex: 1; }
+  .nm { font-size:14px; font-weight:600; line-height:1.3; }
+  .ad { font-size:12px; color:var(--mut); white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+  .dots { margin-left:auto; letter-spacing:1px; font-weight:800; color:#333; line-height:1; padding:4px 2px 8px 8px; font-size: 16px; }
+  .stars { color:var(--star); letter-spacing:1px; } .stars em { color:#ddd; font-style:normal; } .cnt { color:var(--mut); letter-spacing:0; }
+
+  /* Nav */
+  .nav { position:absolute; bottom:0; left:0; right:0; height:76px; background:#fff; border-top:1px solid var(--line); display:flex; justify-content:space-around; padding-top:10px; z-index:30; }
+  .nav button { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:12px; color:#8a8f98; width:70px; height: 54px; }
+  .nav button svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  .nav button.on { color:var(--blue); } .nav button.on svg.fillable { fill: var(--blue); stroke: var(--blue); }
+  .nav.hide { display:none; }
+
+  /* Welcome */
+  .logo { position:absolute; top:46px; left:0; right:0; display:flex; justify-content:center; align-items:center; gap:10px; font-weight:700; font-size:20px; z-index: 2; }
+  .mark { width:36px; height:36px; background:var(--blue); border-radius:4px; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:24px; }
+  .fan { position:absolute; top:100px; left:0; right:0; height:46%; -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 28%); mask-image:linear-gradient(to bottom, transparent 0, #000 28%); overflow:hidden; }
+  .fc { position:absolute; width:270px; height:104px; background:#fff; border-radius:8px; padding:16px; box-shadow:0 6px 24px rgba(0,0,0,.09); transform: rotate(-9deg); animation: drift 7s ease-in-out infinite alternate; }
+  .fc .ap { position:absolute; left:16px; bottom:14px; font-size:12px; color:var(--mut); }
+  .fc .stars { position:absolute; right:16px; bottom:14px; font-size:12px; }
+  @keyframes drift { from { translate: -14px 0; } to { translate: 14px 6px; } }
+  .wtext { position:absolute; bottom:0; left:0; right:0; padding: 0 20px 34px; text-align:center; background: linear-gradient(to bottom, rgba(255,255,255,0), #fff 18%); }
+  .wtext h1 { font-size:28px; line-height:1.22; font-weight:700; padding: 0 10px; }
+  .wtext p { color:var(--mut); font-size:16.5px; line-height:1.4; margin: 14px 0 22px; }
+  .btn { width:100%; height:46px; background:var(--blue); border-radius:6px; color:#fff; font-size:17px; font-weight: 500; transition: filter .15s, transform .1s; }
+  .btn:hover { filter: brightness(1.08); } .btn:active { transform: scale(.985); }
+  .btn.sec2 { background:#fff; color: var(--blue); border: 1px solid var(--blue); }
+  .btn.danger { background:#fff; color:#d92d20; border:1px solid #f3c6c2; }
+  .signin { margin-top:16px; font-size:16px; } .signin button { color:var(--blue); font-size:16px; }
+
+  /* Pipeline */
+  .bar1 { background:#fff; height:70px; display:flex; align-items:center; padding:0 14px 0 10px; gap:6px; position:sticky; top:0; z-index:6; }
+  .bar1 b { font-size:20px; font-weight:600; flex:1; padding-left:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .stack { display:flex; padding-right: 6px; } .stack .av { width:30px; height:30px; font-size:17px; border:2px solid #fff; margin-left:-8px; }
+  .more { background:#fff; border:1px solid #e5e7eb; border-radius:16px; font-size:11px; padding:4px 6px; font-weight:600; }
+  .tools { background:#fff; padding:2px 12px 14px; display:flex; gap:10px; align-items:center; border-bottom:1px solid var(--line); position:sticky; top:70px; z-index:6; }
+  .search { flex:1; height:42px; border:1px solid #e5e7eb; border-radius:6px; display:flex; align-items:center; gap:10px; padding:0 12px; color:#8a8f98; min-width: 0; }
+  .search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(20,115,245,.12); }
+  .search input { border:0; outline:0; flex:1; font-size:14px; background:transparent; min-width:0; }
+  .toggle { display:flex; border:1px solid #e5e7eb; border-radius:6px; padding:3px; gap:3px; height:42px; }
+  .toggle button { width:30px; display:flex; align-items:center; justify-content:center; border-radius:4px; color:#333; }
+  .toggle button.on { background:#e8f0fe; color:var(--blue); }
+  .addc { width:42px; height:42px; background:var(--blue); border-radius:6px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .board { display:flex; gap:10px; padding:14px 12px 24px; overflow-x:auto; align-items:flex-start; scroll-snap-type: x proximity; }
+  .board::-webkit-scrollbar { height: 0; }
+  .col { background:#eceef1; border-radius:8px; padding:10px 8px 2px; flex:none; width:276px; min-height: 140px; scroll-snap-align:start; transition: background .15s, outline-color .15s; outline: 2px dashed transparent; }
+  .col.over { background:#dfe9fb; outline-color: var(--blue); }
+  .col h5 { font-size:17px; font-weight:600; padding:4px 4px 10px; display:flex; gap:12px; align-items:center; }
+  .col h5 small { font-size:13px; font-weight:600; background:#f9fafb; border:1px solid #e5e7eb; min-width:20px; height:20px; padding: 0 5px; display:flex; justify-content:center; align-items:center; border-radius:4px; }
+  .kc { background:#fff; border-radius:8px; padding:14px 14px 12px; margin-bottom:12px; cursor:grab; transition: box-shadow .15s, transform .15s, opacity .15s; }
+  .kc:hover { box-shadow:0 4px 14px rgba(0,0,0,.08); }
+  .kc.dragging { opacity:.4; transform: scale(.97); }
+  .kc .foot { margin-top:12px; padding-top:12px; border-top:1px solid #f0f1f3; display:flex; justify-content:space-between; font-size:12px; color:var(--mut); }
+  .empty { text-align:center; color:#9aa0a9; font-size:13px; padding:20px 8px 26px; }
+  .board.listmode { flex-direction:column; overflow:visible; gap:0; padding: 12px; }
+  .lr { background:#fff; border-radius:8px; padding:12px 14px; display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+  .lr .cand { flex:1; min-width:0; }
+  .lr select, .sel-stage { border:1px solid #e5e7eb; border-radius:6px; padding:6px 8px; font-size:12px; background:#fff; }
+
+  /* Lists / forms */
+  .pad { padding:12px; }
+  .h1 { font-size:22px; font-weight:700; padding: 18px 16px 6px; }
+  .jobcard { background:#fff; border-radius:8px; padding:16px; margin-bottom:10px; display:flex; align-items:center; gap:12px; width:100%; text-align:left; }
+  .jobcard .ji { width:42px; height:42px; border-radius:10px; background:#e8f0fe; color:var(--blue); display:flex; align-items:center; justify-content:center; flex:none; }
+  .jobcard b { font-size:15px; display:block; } .jobcard span { font-size:12.5px; color:var(--mut); }
+  .jobcard .pill { margin-left:auto; background:#f0f6ff; color:var(--blue); font-size:12px; padding:4px 10px; border-radius:12px; font-weight:600; flex:none; }
+  .form { background:#fff; margin:12px; border-radius:8px; padding:16px; }
+  .field { margin-bottom:14px; } .field label { display:block; font-size:13px; color:var(--mut); margin-bottom:6px; }
+  .field input, .field select, .field textarea { width:100%; border:1px solid #e5e7eb; border-radius:6px; padding:11px 12px; font-size:15px; outline:0; background:#fff; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(20,115,245,.12); }
+  .field textarea { resize:vertical; min-height:90px; }
+  .profile { background:#fff; margin:12px; border-radius:8px; padding:22px; text-align:center; }
+  .profile .av { width:72px; height:72px; font-size:38px; margin:0 auto 10px; }
+  .profile b { font-size:18px; } .profile p { color:var(--mut); font-size:14px; margin-top:2px; }
+  .menu { background:#fff; margin:12px; border-radius:8px; overflow:hidden; }
+  .menu button { display:flex; justify-content:space-between; width:100%; padding:15px 16px; font-size:15px; border-bottom:1px solid var(--line); text-align:left; }
+  .menu button:last-child { border:0; }
+
+  /* Sheet + toast */
+  .wrap { position:absolute; inset:0; background:rgba(15,20,30,.45); z-index:60; display:none; align-items:flex-end; }
+  .wrap.on { display:flex; animation: fadeo .2s; }
+  @keyframes fadeo { from { opacity:0; } to { opacity:1; } }
+  .sheet { background:#fff; width:100%; border-radius:18px 18px 0 0; padding:10px 18px 22px; max-height:86%; overflow:auto; animation: up .25s cubic-bezier(.2,.8,.2,1); }
+  @keyframes up { from { transform: translateY(40px); opacity:0; } to { transform:none; opacity:1; } }
+  .grab { width:40px; height:4px; background:#d9dce1; border-radius:2px; margin:0 auto 14px; }
+  .sheet h3 { font-size:18px; margin-bottom:12px; }
+  .sheet .opt { display:block; width:100%; text-align:left; padding:14px 6px; border-bottom:1px solid var(--line); font-size:15px; }
+  .sheet .opt.red { color:#d92d20; } .sheet .opt:last-child { border: 0; }
+  .todo { display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:1px solid var(--line); font-size:15px; cursor:pointer; }
+  .todo input { width:18px; height:18px; accent-color: var(--blue); }
+  .todo.done span { text-decoration:line-through; color:#9aa0a9; }
+  .ev { padding:12px 4px; border-bottom:1px solid var(--line); } .ev b { font-size:15px; display:block; } .ev span { font-size:13px; color:var(--mut); }
+  .detail { display:flex; gap:12px; align-items:center; margin-bottom:14px; } .detail .av { width:52px; height:52px; font-size:28px; }
+  .kv { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; } .kv span:first-child { color:var(--mut); }
+  .toast { position:absolute; left:50%; bottom:92px; transform:translate(-50%, 20px); background:#111; color:#fff; padding:10px 16px; border-radius:22px; font-size:14px; opacity:0; pointer-events:none; transition:.25s; z-index:80; white-space:nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis; }
+  .toast.on { opacity:1; transform:translate(-50%, 0); }
+  .toast.hi { bottom:130px; }
+  /* Splash */
+  #splash { background: var(--blue); }
+  .splash { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #fff; font-weight: 800; font-size: 26px; letter-spacing: .02em; }
+  .splash .mark { background: #fff; color: var(--blue); width: 76px; height: 76px; font-size: 50px; border-radius: 16px; animation: pop .7s cubic-bezier(.2,.9,.3,1.3); }
+  .splash b { animation: fade .8s ease .2s both; }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  /* Onboarding */
+  .skip { position:absolute; top:50px; right:20px; z-index:3; color:var(--mut); font-size:14px; font-weight:600; padding: 4px 6px; }
+  .fan.plain { -webkit-mask-image:none; mask-image:none; }
+  .wslides { min-height: 190px; }
+  .dots2 { display:flex; gap:6px; justify-content:center; margin-bottom:18px; }
+  .dots2 button { width:8px; height:8px; border-radius:4px; background:#d5d9df; transition:.25s; }
+  .dots2 button.on { width:22px; background:var(--blue); }
+  .art2, .art3 { position:absolute; inset:20px 0 0; display:flex; flex-direction:column; align-items:center; gap:14px; padding-top:30px; animation: fade .35s ease; }
+  .mcard { width:300px; background:#fff; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.09); padding:16px; }
+  .mh { display:flex; justify-content:space-between; font-size:14px; } .mh span { color:var(--mut); font-size:12px; }
+  .mbars { display:flex; height:120px; margin-top:14px; gap:4px; }
+  .mbars > div { flex:1; display:flex; align-items:flex-end; justify-content:center; }
+  .mb { width:14px; background:var(--blue); border-radius:3px 3px 0 0; position:relative; }
+  .mb i { position:absolute; bottom:0; left:0; right:0; background:var(--green); display:block; }
+  .mchips { display:flex; gap:12px; }
+  .mchip { width:144px; background:#fff; border-radius:10px; padding:12px; box-shadow:0 6px 24px rgba(0,0,0,.09); }
+  .mchip span { font-size:12px; color:var(--mut); } .mchip b { display:block; font-size:22px; margin-top:4px; }
+  .art3 { flex-direction:row; justify-content:center; align-items:flex-start; gap:10px; padding:40px 14px 0; }
+  .mcol { background:#eceef1; border-radius:10px; padding:10px 8px; width:112px; }
+  .mcol h6 { font-size:12px; font-weight:700; margin-bottom:8px; }
+  .mk { background:#fff; border-radius:8px; padding:8px; margin-bottom:8px; display:flex; gap:6px; align-items:center; font-size:11px; font-weight:600; }
+  .mk i { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-style:normal; font-size:13px; flex:none; }
+
+  /* Auth */
+  .auth-in { padding: 14px 22px 40px; max-width: 420px; margin: 0 auto; }
+  .auth .back { margin-left: -10px; }
+  .logo2 { display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; margin: 10px 0 26px; }
+  .auth h2 { font-size: 26px; font-weight: 700; }
+  .sub { color: var(--mut); font-size: 15px; line-height: 1.45; margin: 8px 0 24px; }
+  .lnk { color: var(--blue); font-weight: 600; font-size: 14px; }
+  .lnk.sm { font-size: 13px; padding: 6px; }
+  .row-between { display:flex; justify-content:space-between; margin: -4px 0 18px; }
+  .pw { position: relative; }
+  .pw input { padding-right: 46px; }
+  .eye { position:absolute; right:6px; top:50%; transform:translateY(-50%); width:36px; height:36px; display:flex; align-items:center; justify-content:center; color:#8a8f98; }
+  .eye.on { color: var(--blue); }
+  .field.bad input { border-color:#d92d20; box-shadow:0 0 0 3px rgba(217,45,32,.10); }
+  .err { color:#d92d20; font-size:12.5px; margin-top:6px; }
+  .err:empty { display:none; }
+  .or { display:flex; align-items:center; gap:12px; color:#9aa0a9; font-size:13px; margin: 22px 0 16px; }
+  .or::before, .or::after { content:""; flex:1; height:1px; background:var(--line); }
+  .soc { display:flex; gap:12px; }
+  .sbtn { flex:1; height:46px; border:1px solid #e5e7eb; border-radius:6px; font-weight:600; font-size:15px; display:flex; align-items:center; justify-content:center; gap:8px; background:#fff; }
+  .sbtn:active { background:#f7f8fa; }
+  .alt { text-align:center; margin-top: 24px; font-size: 15px; color: var(--mut); }
+  .alt .lnk { font-size: 15px; }
+  .hint { text-align:center; margin-top: 14px; font-size: 12.5px; color:#9aa0a9; }
+  .chk { display:flex; gap:10px; align-items:flex-start; font-size:14px; color:var(--mut); line-height:1.4; cursor:pointer; }
+  .chk input { width:18px; height:18px; accent-color: var(--blue); margin-top:1px; flex:none; }
+  .ficon { width:64px; height:64px; border-radius:18px; background:#e8f0fe; color:var(--blue); display:flex; align-items:center; justify-content:center; margin: 16px 0 20px; }
+  .ficon.ok { background:#e6f8ec; color:var(--green); }
+
+  /* Notifications */
+  .ntabs { display:flex; gap:8px; padding:6px 14px 12px; background:#fff; position:sticky; top:70px; z-index:5; border-bottom:1px solid var(--line); }
+  .ntabs button { padding:7px 16px; border-radius:18px; font-size:13.5px; font-weight:600; color:var(--mut); background:#f1f3f5; }
+  .ntabs button.on { background:var(--blue); color:#fff; }
+  .ngh { padding:16px 18px 8px; font-size:12px; font-weight:700; color:var(--mut); text-transform:uppercase; letter-spacing:.05em; }
+  .ni { display:flex; gap:12px; padding:14px 12px 14px 16px; background:#fff; margin:0 12px 8px; border-radius:10px; cursor:pointer; position:relative; align-items:flex-start; }
+  .ni.unread { background:#f3f8ff; }
+  .ni.unread::before { content:""; position:absolute; left:5px; top:50%; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:var(--blue); }
+  .nic { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .nic.applied { background:#e8f0fe; color:var(--blue); } .nic.interview { background:#fff4e0; color:#f59e0b; }
+  .nic.message { background:#e6f8ec; color:var(--green); } .nic.offer { background:#ffe8f3; color:#d6249f; } .nic.system { background:#eef0f3; color:#555; }
+  .nbody { flex:1; min-width:0; } .nbody b { font-size:14px; display:block; }
+  .nbody p { font-size:13px; color:var(--mut); margin-top:2px; line-height:1.4; }
+  .nbody span { font-size:12px; color:#9aa0a9; display:block; margin-top:6px; }
+  .nx { color:#9aa0a9; font-size:15px; padding:2px 6px; line-height:1; }
+
+  /* Profile setup */
+  #setup { inset: 0; background: var(--bg); }
+  .sprog { background:#fff; padding:0 16px 14px; position:sticky; top:70px; z-index:5; border-bottom:1px solid var(--line); }
+  .sbar { height:6px; background:#eceef1; border-radius:3px; overflow:hidden; }
+  .sbar i { display:block; height:100%; background:var(--blue); border-radius:3px; transition:width .35s; width:0; }
+  .sprog span { display:block; font-size:12.5px; color:var(--mut); margin-top:8px; }
+  .sbody { padding-bottom: 16px; }
+  .sbody h3 { font-size:20px; font-weight:700; margin:16px 16px 4px; }
+  .sub2 { color:var(--mut); font-size:14px; margin:0 16px 4px; }
+  .sbody .form, .sbody .doc { margin-left:12px; margin-right:12px; }
+  .sfoot { position:sticky; bottom:0; background:#fff; padding:12px 16px; border-top:1px solid var(--line); z-index:6; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .field label em { color:#d92d20; font-style:normal; }
+  .btn.sm { height:38px; font-size:14px; margin-top:6px; }
+  .mhead, .mrow { display:grid; grid-template-columns:1fr 80px 28px; gap:8px; }
+  .mhead { font-size:12px; color:var(--mut); margin-bottom:6px; padding:0 2px; }
+  .mrow { margin-bottom:8px; align-items:center; }
+  .mrow input { border:1px solid #e5e7eb; border-radius:6px; padding:10px; font-size:15px; outline:0; width:100%; min-width:0; background:#fff; }
+  .mrow input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(20,115,245,.12); }
+  .msum { margin-top:14px; background:#f3f8ff; border-radius:8px; padding:10px 12px; font-size:13.5px; }
+  .msum span { color:var(--mut); font-size:12px; }
+  .doc { background:#fff; border-radius:10px; padding:14px; margin-bottom:10px; }
+  .dtop { display:flex; gap:12px; align-items:center; }
+  .dic { width:40px; height:40px; border-radius:10px; background:#ffeceb; color:#e5484d; display:flex; align-items:center; justify-content:center; flex:none; }
+  .dbody { flex:1; min-width:0; } .dbody b { font-size:14px; }
+  .dbody b em { color:#d92d20; font-style:normal; font-size:11px; margin-left:6px; }
+  .dbody b i { color:#9aa0a9; font-style:normal; font-size:11px; margin-left:6px; }
+  .dbody span { display:block; font-size:12.5px; color:var(--mut); margin-top:2px; }
+  .upl { border:1px solid var(--blue); color:var(--blue); border-radius:6px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; flex:none; }
+  .dfile { display:flex; align-items:center; gap:8px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); font-size:13px; }
+  .dfile .ok { color:var(--green); font-weight:800; }
+  .dfile .fn { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dfile .fs { color:var(--mut); flex:none; }
+  .dfile button[data-viewdoc] { color:var(--blue); font-weight:600; font-size:13px; }
+  .pbanner { margin:12px 12px 0; width:calc(100% - 24px); background:linear-gradient(135deg,#1473f5,#4a95ff); color:#fff; border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:12px; text-align:left; }
+  .pbanner > div { flex:1; } .pbanner b { font-size:15px; display:block; }
+  .pbanner #pbTxt { font-size:12.5px; opacity:.92; }
+  .pbar { height:6px; background:rgba(255,255,255,.3); border-radius:3px; margin-top:10px; overflow:hidden; }
+  .pbar i { display:block; height:100%; background:#fff; border-radius:3px; }
+
+
+  /* University applications */
+  #apply { inset: 0; background: var(--bg); }
+  .btn.off { opacity:.45; }
+  .abanner { margin:12px 12px 0; width:calc(100% - 24px); background:#fff; border:1px solid #dbe7fd; border-radius:10px; padding:14px; display:flex; align-items:center; gap:12px; text-align:left; }
+  .abanner > div:nth-child(2) { flex:1; } .abanner b { display:block; font-size:15px; } .abanner span { font-size:12.5px; color:var(--mut); }
+  .aic { width:42px; height:42px; border-radius:12px; background:#e8f0fe; color:var(--blue); display:flex; align-items:center; justify-content:center; flex:none; }
+  .kchips { display:flex; gap:8px; padding:4px 12px 10px; overflow-x:auto; }
+  .kchips button { padding:7px 14px; border-radius:18px; font-size:13px; font-weight:600; color:var(--mut); background:#fff; white-space:nowrap; }
+  .kchips button.on { background:var(--blue); color:#fff; }
+  .apsearch { padding:0 12px 10px; }
+  .uc { display:flex; gap:12px; align-items:center; background:#fff; border-radius:10px; padding:13px 14px; margin:0 12px 8px; width:calc(100% - 24px); text-align:left; border:1.5px solid transparent; }
+  .uc.sel { border-color:var(--blue); background:#f3f8ff; }
+  .uc.dis { opacity:.55; }
+  .ulogo { width:42px; height:42px; border-radius:12px; background:#e8f0fe; color:var(--blue); font-weight:800; font-size:11px; display:flex; align-items:center; justify-content:center; flex:none; }
+  .uc .ut { flex:1; min-width:0; } .uc b { font-size:14.5px; display:block; line-height:1.3; } .uc small { display:block; font-size:12.5px; color:var(--mut); margin-top:2px; }
+  .rad { width:22px; height:22px; border-radius:50%; border:2px solid #cfd4db; flex:none; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; font-weight:800; }
+  .rad.sq { border-radius:7px; }
+  .uc.sel .rad { background:var(--blue); border-color:var(--blue); }
+  .atag { font-size:11px; font-weight:700; color:var(--green); background:#e6f8ec; padding:3px 8px; border-radius:10px; flex:none; }
+  .fchip { font-size:11px; color:var(--mut); background:#f1f3f5; border-radius:8px; padding:2px 7px; margin-top:5px; display:inline-block; }
+  .apinfo { margin:4px 12px 10px; background:#f3f8ff; border-radius:8px; padding:10px 12px; font-size:13.5px; display:flex; justify-content:space-between; gap:10px; align-items:center; }
+  .apinfo b { font-weight:700; } .apinfo button { color:var(--blue); font-weight:600; font-size:13px; flex:none; }
+  .apcard { background:#fff; margin:12px 12px 0; border-radius:10px; padding:14px 16px; }
+  .apcard h4 { font-size:15px; margin-bottom:6px; }
+  .sumrow { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .sumrow:last-child { border:0; } .sumrow span:first-child { color:var(--mut); } .sumrow.tot { font-weight:700; font-size:16px; } .sumrow.tot span:first-child { color:#111; }
+  .crs { display:flex; gap:10px; align-items:flex-start; padding:8px 0; font-size:14px; }
+  .crs i { font-style:normal; width:22px; height:22px; border-radius:50%; background:var(--blue); color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; }
+  .crs small { display:block; color:var(--mut); font-size:12px; }
+  .okring { width:76px; height:76px; border-radius:50%; background:#e6f8ec; color:var(--green); display:flex; align-items:center; justify-content:center; margin:30px auto 14px; }
+  .center { text-align:center; } .center h3 { margin:0 16px 6px; font-size:22px; }
+  .demo { margin:10px 12px 0; font-size:12px; color:var(--mut); text-align:center; line-height:1.4; }
+  .appc { background:#fff; border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+  .appc .ah { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+  .appc .ah b { font-size:15px; line-height:1.3; } .appc .aref { font-size:12px; color:var(--mut); margin-top:2px; }
+  .appc .ast { font-size:12px; font-weight:700; color:var(--blue); background:#f0f6ff; padding:4px 10px; border-radius:12px; flex:none; }
+  .empty2 { text-align:center; color:var(--mut); padding:30px 20px; font-size:14px; line-height:1.5; }
+  .bsel { margin:0 12px 8px; } .tdgo { cursor:pointer; }
+
+  /* Decluttered home */
+  .qa { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 12px 0; }
+  .qa button { background:#fff; border-radius:12px; padding:14px; text-align:left; display:flex; flex-direction:column; gap:2px; }
+  .qa button:active { background:#fafbfc; }
+  .qa .qi { width:40px; height:40px; border-radius:12px; background:#e8f0fe; color:var(--blue); display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+  .qa .qi.g { background:#e6f8ec; color:var(--green); }
+  .qa b { font-size:15px; font-weight:600; } .qa small { font-size:12.5px; color:var(--mut); }
+  .stats { padding-top:10px; }
+  .sec { padding-top:22px; }
+
+  /* Stationary bars: titles, chips and search stay put while content scrolls */
+  .h1 { height:56px; padding:0 16px; display:flex; align-items:center; position:sticky; top:0; z-index:7; background:var(--bg); }
+  .stk { position:sticky; top:56px; z-index:6; background:var(--bg); padding:2px 12px 10px; }
+  #myapps .kchips.stk { padding:2px 12px 10px; }
+  .bar1, .top { position:sticky; top:0; z-index:8; }
+  .sfoot { position:sticky; bottom:0; }
+
+  /* Hide all scrollbars (scrolling still works) */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  /* Prevent iOS zoom-on-focus */
+  @media (max-width: 600px) { .search input, .field input, .field select, .field textarea { font-size: 16px; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- WELCOME -->
+  <section class="screen on" id="splash"><div class="splash"><div class="mark">N</div><b>NUBIZE</b></div></section>
+
+  <section class="screen" id="welcome">
+    <div class="logo"><div class="mark">N</div>NUBIZE</div>
+    <button class="skip" data-skip>Skip</button>
+    <div class="fan" id="fan"></div>
+    <div class="wtext">
+      <div class="wslides"><h1 id="wh"></h1><p id="wp"></p></div>
+      <div class="dots2" id="wdots"></div>
+      <button class="btn" id="wnext">Next</button>
+      <div class="signin">Already have an account? <button data-go="signin">Sign In</button></div>
+    </div>
+  </section>
+
+  <!-- HOME -->
+  <section class="screen" id="home">
+    <div class="top">
+      <button class="ib" data-go="account" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h12M3 18h18"/></svg></button>
+      <div class="title"><small id="today"></small><b id="hiName">Hi, Olivia Reiss</b></div>
+      <button class="ib" id="bell" aria-label="Notifications"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><i id="dot"></i></button>
+    </div>
+    <button class="pbanner" id="pBanner" data-setup style="display:none"><div><b>Complete your profile</b><span id="pbTxt"></span><div class="pbar"><i id="pbFill"></i></div></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+    <div class="qa">
+      <button data-apply><span class="qi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5M22 9v6"/></svg></span><b>Apply to study</b><small>University or college</small></button>
+      <button data-bursary><span class="qi g"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.8 9.2c-.5-.8-1.5-1.2-2.8-1.2-1.7 0-2.8.8-2.8 2s1 1.7 2.8 2 2.8.8 2.8 2-1.1 2-2.8 2c-1.3 0-2.3-.4-2.8-1.2M12 6v2m0 8v2"/></svg></span><b>Find a bursary</b><small>Free to apply</small></button>
+    </div>
+    <div class="sec"><span>Recent applications</span><button data-go="myapps">See All</button></div>
+    <div class="pad" id="homeApps" style="padding-bottom:0"></div>
+    </section>
+
+  <!-- APPLICATIONS -->
+  <section class="screen" id="myapps">
+    <div class="h1">Applications</div>
+    <div class="kchips stk" id="maChips"></div>
+    <div class="pad" id="maList" style="padding-top:2px"></div>
+  </section>
+
+  <!-- SEARCH -->
+  <section class="screen" id="search">
+    <div class="h1">Search</div>
+    <div class="stk"><label class="search" style="background:#fff"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="gq" placeholder="Search universities, colleges, bursaries…" autocomplete="off"></label></div>
+    <div id="gResults" style="padding-bottom:20px"></div>
+  </section>
+
+  <!-- ACCOUNT -->
+  <section class="screen" id="account">
+    <div class="profile"><div class="av" style="background:#f9b3c6">👩</div><b id="accName">Olivia Reiss</b><p id="accEmail"></p></div>
+    <div class="menu">
+      <button data-setup>My profile <span id="accPct">0%</span></button>
+      <button data-todos>My to-dos <span>›</span></button>
+    </div>
+    <div style="padding:0 12px"><button class="btn danger" id="signout">Sign out</button></div>
+  </section>
+
+  <!-- PROFILE SETUP -->
+  <section class="screen" id="setup">
+    <div class="bar1">
+      <button class="ib" id="sBack" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <b>Complete your profile</b>
+      <button class="lnk sm" id="sSkip">Skip for now</button>
+    </div>
+    <div class="sprog"><div class="sbar"><i id="sFill"></i></div><span id="sCount"></span></div>
+    <div class="sbody" id="sBody"></div>
+    <div class="sfoot"><button class="btn" id="sNext">Continue</button></div>
+  </section>
+
+  <!-- APPLY -->
+  <section class="screen" id="apply">
+    <div class="bar1">
+      <button class="ib" id="apBack" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <b id="apTitle">Apply</b>
+      <span style="width:36px"></span>
+    </div>
+    <div class="sprog" id="apProg"><div class="sbar"><i id="apFill"></i></div><span id="apCount"></span></div>
+    <div class="sbody" id="apBody"></div>
+    <div class="sfoot" id="apFoot"><button class="btn" id="apNext">Continue</button></div>
+  </section>
+
+  <!-- NOTIFICATIONS -->
+  <section class="screen" id="notifications">
+    <div class="bar1">
+      <button class="ib" data-go="home" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <b>Notifications</b>
+      <button class="lnk sm" id="markAll">Mark all read</button>
+    </div>
+    <div class="ntabs"><button class="on" data-ntab="all">All</button><button data-ntab="unread">Unread</button></div>
+    <div id="nList" style="padding-bottom:20px"></div>
+  </section>
+
+  <!-- SIGN IN -->
+  <section class="screen auth" id="signin">
+    <div class="auth-in">
+      <button class="ib back" data-go="welcome" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="logo2"><div class="mark">N</div>NUBIZE</div>
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to continue your applications.</p>
+      <form id="signinForm" novalidate>
+        <div class="field"><label>Email</label><input name="email" type="email" value="olivia@nubize.com" autocomplete="email" placeholder="you@company.com"><div class="err"></div></div>
+        <div class="field"><label>Password</label><div class="pw"><input name="pass" type="password" value="password123" autocomplete="current-password" placeholder="Enter your password"><button type="button" class="eye" data-eye aria-label="Show password"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="err"></div></div>
+        <div class="row-between"><span></span><button type="button" class="lnk" data-go="forgot">Forgot password?</button></div>
+        <button class="btn" type="submit">Sign In</button>
+      </form>
+      <div class="or">or continue with</div>
+      <div class="soc"><button class="sbtn" data-social="Google"><b style="color:#ea4335">G</b> Google</button><button class="sbtn" data-social="Apple">Apple</button></div>
+      <p class="alt">Don't have an account? <button class="lnk" data-go="signup">Sign Up</button></p>
+      <p class="hint">Demo account: olivia@nubize.com / password123</p>
+    </div>
+  </section>
+
+  <!-- SIGN UP -->
+  <section class="screen auth" id="signup">
+    <div class="auth-in">
+      <button class="ib back" data-go="welcome" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="logo2"><div class="mark">N</div>NUBIZE</div>
+      <h2>Create your account</h2>
+      <p class="sub">Create an account to apply to universities, colleges and bursaries.</p>
+      <form id="signupForm" novalidate>
+        <div class="field"><label>Full name</label><input name="name" autocomplete="name" placeholder="Jane Cooper"><div class="err"></div></div>
+        <div class="field"><label>Email</label><input name="email" type="email" autocomplete="email" placeholder="you@company.com"><div class="err"></div></div>
+        <div class="field"><label>Password</label><div class="pw"><input name="pass" type="password" autocomplete="new-password" placeholder="At least 6 characters"><button type="button" class="eye" data-eye aria-label="Show password"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div><div class="err"></div></div>
+        <label class="chk"><input type="checkbox" name="terms"> <span>I agree to the Terms of Service and Privacy Policy</span></label>
+        <div class="err" id="termsErr"></div>
+        <button class="btn" type="submit" style="margin-top:20px">Create Account</button>
+      </form>
+      <div class="or">or sign up with</div>
+      <div class="soc"><button class="sbtn" data-social="Google"><b style="color:#ea4335">G</b> Google</button><button class="sbtn" data-social="Apple">Apple</button></div>
+      <p class="alt">Already have an account? <button class="lnk" data-go="signin">Sign In</button></p>
+    </div>
+  </section>
+
+  <!-- FORGOT PASSWORD -->
+  <section class="screen auth" id="forgot">
+    <div class="auth-in">
+      <button class="ib back" data-go="signin" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div id="fgForm">
+        <div class="ficon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
+        <h2>Forgot password?</h2>
+        <p class="sub">Enter the email linked to your account and we'll send you a reset link.</p>
+        <form id="forgotForm" novalidate>
+          <div class="field"><label>Email</label><input name="email" type="email" autocomplete="email" placeholder="you@company.com"><div class="err"></div></div>
+          <button class="btn" type="submit">Send Reset Link</button>
+        </form>
+      </div>
+      <div id="fgSent" style="display:none">
+        <div class="ficon ok"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5 11-11"/></svg></div>
+        <h2>Check your email</h2>
+        <p class="sub" id="fgText"></p>
+        <button class="btn" data-go="signin">Back to Sign In</button>
+      </div>
+    </div>
+  </section>
+
+  <nav class="nav hide" id="nav">
+    <button data-go="home" data-tab="home"><svg class="fillable" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+    <button data-go="myapps" data-tab="myapps"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg>Applications</button>
+    <button data-go="search" data-tab="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Search</button>
+    <button data-go="account" data-tab="account"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Account</button>
+  </nav>
+
+  <div class="wrap" id="wrap"><div class="sheet" id="sheet"></div></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const $ = (s, r=document) => r.querySelector(s), $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- Data ---------- */
+let curScreen = 'welcome';
+
+/* ---------- Helpers ---------- */
+let toastT;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.toggle('hi', curScreen === 'setup' || curScreen === 'apply'); t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2000); }
+function openSheet(html){ $('#sheet').innerHTML = '<div class="grab"></div>' + html; $('#wrap').classList.add('on'); }
+function closeSheet(){ $('#wrap').classList.remove('on'); }
+$('#wrap').addEventListener('click', e => { if (e.target.id === 'wrap') closeSheet(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+/* ---------- Navigation ---------- */
+const NONAV = ['splash', 'welcome', 'signin', 'signup', 'forgot', 'setup', 'apply'];
+function go(name){
+  curScreen = name;
+  $$('.screen').forEach(s => s.classList.toggle('on', s.id === name));
+  $('#nav').classList.toggle('hide', NONAV.includes(name));
+  const tab = name === 'notifications' ? 'home' : name;
+  $$('.nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  $('#' + name).scrollTop = 0;
+  if (name === 'home') renderHome();
+  if (name === 'myapps') renderMyApps();
+  if (name === 'search') renderSearch();
+  if (name === 'account') { $('#accName').textContent = user.name; $('#accEmail').textContent = user.email; $('#accPct').textContent = pctDone() + '%'; }
+  if (name === 'setup') { const sp = getProfile(); if (sp.done || sp.step >= STEPS.length) sp.step = 0; renderSetup(); }
+  if (name === 'notifications') renderNotifs();
+  if (name === 'apply') renderApply();
+  if (name === 'forgot') { $('#fgForm').style.display = ''; $('#fgSent').style.display = 'none'; $('#forgotForm').reset(); $$('#forgot .field').forEach(f => f.classList.remove('bad')); $$('#forgot .err').forEach(x => x.textContent = ''); }
+  closeSheet();
+}
+
+/* ---------- Home ---------- */
+function todoList(){
+  const p = getProfile(), apps = loadApps();
+  return [
+    { t:'Complete your profile', d: pctDone() === 100, go:'setup' },
+    { t:'Upload your ID copy and latest results', d: !!(p.docs && p.docs.id && p.docs.results), go:'setup' },
+    { t:'Apply to a university or college', d: apps.some(a => a.type !== 'bursary'), go:'apply' },
+    { t:'Apply for a bursary', d: apps.some(a => a.type === 'bursary'), go:'bursary' },
+  ];
+}
+function renderHome(){
+  const d = new Date();
+  $('#today').textContent = `${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]}, ${String(d.getDate()).padStart(2,'0')} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]}`;
+  $('#hiName').textContent = 'Hi, ' + user.name;
+  renderBanner();
+  updateBadge();
+  const apps = loadApps();
+  $('#homeApps').innerHTML = apps.length ? apps.slice(0, 2).map(appCard).join('') : '<div class="empty2" style="padding:6px 8px 16px">No applications yet. Start your first one above.</div>';
+}
+$('#bell').addEventListener('click', () => go('notifications'));
+
+/* ---------- Sheets ---------- */
+function openTodos(){
+  openSheet(`<h3>To-dos</h3>` + todoList().map((t, i) => `<div class="todo tdgo ${t.d ? 'done' : ''}" data-todogo="${i}"><input type="checkbox" disabled ${t.d ? 'checked' : ''}><span>${esc(t.t)}</span></div>`).join(''));
+}
+
+/* ---------- Global click delegation ---------- */
+document.addEventListener('click', e => {
+  const t = e.target; let el;
+  if ((el = t.closest('[data-toast]'))) { closeSheet(); return toast(el.dataset.toast); }
+  if (t.closest('[data-todos]')) return openTodos();
+  if ((el = t.closest('[data-todogo]'))) { const g = todoList()[+el.dataset.todogo].go; closeSheet(); return g === 'apply' ? startApply() : g === 'bursary' ? startBursary() : go(g); }
+  if (extraClick(t)) return;
+  if ((el = t.closest('[data-go]'))) return go(el.dataset.go);
+});
+
+/* ---------- Storage & session ---------- */
+const mem = {};
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : (k in mem ? mem[k] : d); } catch(e){ return k in mem ? mem[k] : d; } },
+  set(k, v){ mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del(k){ delete mem[k]; try { localStorage.removeItem(k); } catch(e){} }
+};
+const accounts = Object.assign({ 'olivia@nubize.com': { name:'Olivia Reiss', pass:'password123' } }, store.get('nubize_accounts', {}));
+let user = { name:'Olivia Reiss', email:'olivia@nubize.com' };
+function startSession(email){ user = { name: accounts[email].name, email }; store.set('nubize_session', email); go('home'); }
+
+document.addEventListener('submit', e => { authSubmit(e); });
+
+/* ---------- Auth forms ---------- */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+function fieldErr(form, name, msg){
+  const f = form.querySelector(`[name="${name}"]`).closest('.field');
+  f.classList.toggle('bad', !!msg); f.querySelector('.err').textContent = msg || '';
+  return !!msg;
+}
+document.addEventListener('input', e => {
+  if (e.target.name === 'terms') $('#termsErr').textContent = '';
+  const f = e.target.closest && e.target.closest('.field'); if (!f) return;
+  f.classList.remove('bad'); const x = f.querySelector('.err'); if (x) x.textContent = '';
+});
+function authSubmit(e){
+  const form = e.target, id = form.id;
+  if (!['signinForm', 'signupForm', 'forgotForm'].includes(id)) return false;
+  e.preventDefault();
+  const f = new FormData(form);
+  const email = (f.get('email') || '').trim().toLowerCase();
+  let bad = fieldErr(form, 'email', EMAIL_RE.test(email) ? '' : 'Enter a valid email address');
+
+  if (id === 'signinForm') {
+    const pass = f.get('pass') || '';
+    bad = fieldErr(form, 'pass', pass ? '' : 'Enter your password') || bad;
+    if (bad) return true;
+    const a = accounts[email];
+    if (!a) { fieldErr(form, 'email', 'No account found with this email'); return true; }
+    if (a.pass !== pass) { fieldErr(form, 'pass', 'Incorrect password'); return true; }
+    startSession(email); toast('Welcome back, ' + a.name.split(' ')[0]);
+  }
+  if (id === 'signupForm') {
+    const name = (f.get('name') || '').trim(), pass = f.get('pass') || '';
+    bad = fieldErr(form, 'name', name.length >= 2 ? '' : 'Enter your full name') || bad;
+    bad = fieldErr(form, 'pass', pass.length >= 6 ? '' : 'Use at least 6 characters') || bad;
+    const okTerms = form.querySelector('[name="terms"]').checked;
+    $('#termsErr').textContent = okTerms ? '' : 'Please accept the terms to continue';
+    if (bad || !okTerms) return true;
+    if (accounts[email]) { fieldErr(form, 'email', 'An account with this email already exists'); return true; }
+    accounts[email] = { name, pass };
+    const saved = store.get('nubize_accounts', {}); saved[email] = { name, pass }; store.set('nubize_accounts', saved);
+    startSession(email);
+    notifs = notifs.filter(n => n.id !== 1);
+    addNotif('system', 'Welcome to Nubize', `Hi ${name.split(' ')[0]}, your account is ready. Complete your profile, then start applying.`, null);
+    toast('Welcome, ' + name.split(' ')[0] + '!');
+    form.reset();
+    go('setup');
+  }
+  if (id === 'forgotForm') {
+    if (bad) return true;
+    $('#fgText').textContent = `We've sent a password reset link to ${email}. It may take a minute to arrive.`;
+    $('#fgForm').style.display = 'none'; $('#fgSent').style.display = '';
+  }
+  return true;
+}
+
+/* ---------- Notifications ---------- */
+const NI = {
+  applied: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/></svg>',
+  interview: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  message: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>',
+  offer: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>',
+  system: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+};
+let notifs = [
+  { id:1, type:'system', title:'Welcome to Nubize', text:'Complete your profile so you are ready to apply.', time:'Just now', group:'Today', read:false, target:{ go:'setup' } },
+  { id:2, type:'message', title:'Have your documents ready', text:'Most applications ask for your ID copy and latest results as PDFs.', time:'Just now', group:'Today', read:false, target:{ go:'setup' } },
+  { id:3, type:'applied', title:'Apply to a university or college', text:'Pick a university, choose 3 courses and pay R60 to submit.', time:'Just now', group:'Today', read:true, target:{ go:'apply' } },
+  { id:4, type:'offer', title:'Looking for funding?', text:'Browse bursaries and apply for free.', time:'Just now', group:'Today', read:true, target:{ go:'bursary' } },
+];
+let ntab = 'all', nseq = 100;
+const unread = () => notifs.filter(n => !n.read).length;
+function updateBadge(){ $('#dot').classList.toggle('off', unread() === 0); }
+function addNotif(type, title, text, target){ notifs.unshift({ id:nseq++, type, title, text, time:'Just now', group:'Today', read:false, target }); updateBadge(); }
+const nitem = n => `<div class="ni ${n.read ? '' : 'unread'}" data-notif="${n.id}"><div class="nic ${n.type}">${NI[n.type]}</div><div class="nbody"><b>${esc(n.title)}</b><p>${esc(n.text)}</p><span>${esc(n.time)}</span></div><button class="nx" data-ndel="${n.id}" aria-label="Dismiss">✕</button></div>`;
+function renderNotifs(){
+  const list = notifs.filter(n => ntab === 'all' || !n.read);
+  $$('[data-ntab]').forEach(b => b.classList.toggle('on', b.dataset.ntab === ntab));
+  $('#nList').innerHTML = list.length
+    ? ['Today', 'Earlier'].map(g => { const items = list.filter(n => n.group === g); return items.length ? `<div class="ngh">${g}</div>${items.map(nitem).join('')}` : ''; }).join('')
+    : `<div class="empty" style="padding:60px 20px">${ntab === 'unread' ? "You're all caught up 🎉" : 'No notifications yet'}</div>`;
+  updateBadge();
+}
+function openNotif(id){
+  const n = notifs.find(x => x.id === id); if (!n) return;
+  n.read = true; updateBadge();
+  const t = n.target;
+  const g = t && t.go;
+  if (g === 'apply') startApply(); else if (g === 'bursary') startBursary(); else if (g) go(g); else renderNotifs();
+}
+
+/* ---------- Onboarding ---------- */
+const fanHTML = '';
+const fanBG = ['#d6e4ff','#e6f8ec','#fff4e0','#ffe8f3','#e8f0fe','#f1f3f5'];
+function fanArt(){
+  const spots = [[-130,10,0],[120,-14,1],[-70,100,2],[150,90,3],[-150,190,4],[60,180,5]], pick = ['ukzn','uct','wits','up','nmu','su'];
+  return spots.map((p, i) => { const u = uniOf(pick[i]);
+    return `<div class="fc" style="left:calc(50% - 135px + ${p[0]}px);top:${p[1]}px;animation-delay:-${i*1.3}s;animation-duration:${6+i%3}s"><div class="cand"><div class="av" style="background:${fanBG[i]};color:#1473f5;font-size:11px;font-weight:800">${esc(u.short)}</div><div><div class="nm">${esc(u.name)}</div><div class="ad">${esc(u.city)}, ${esc(u.prov)}</div></div></div><span class="ap">Choose 3 courses</span><span class="stars">R${APP_FEE}</span></div>`; }).join('');
+}
+function artBursaries(){
+  const rows = BURS.slice(0, 3).map(b => `<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-top:1px solid #f0f1f3"><div class="av" style="width:30px;height:30px;font-size:10px;font-weight:800;background:#e6f8ec;color:#19b84a">${esc(b.short)}</div><div style="font-size:12.5px;font-weight:600;line-height:1.25">${esc(b.name)}<div style="font-weight:400;color:var(--mut);font-size:11px">${esc(b.field)}</div></div></div>`).join('');
+  return `<div class="art2"><div class="mcard"><div class="mh"><b>Bursaries</b><span>Free to apply</span></div><div style="margin-top:8px">${rows}</div></div><div class="mchips"><div class="mchip"><span>Institutions</span><b>${UNIS.length}</b></div><div class="mchip"><span>Bursaries</span><b>${BURS.length}</b></div></div></div>`;
+}
+function artTrack(){
+  const k = (n, bg, e) => `<div class="mk"><i style="background:${bg}">${e}</i>${n}</div>`;
+  const col = (t, items) => `<div class="mcol"><h6>${t}</h6>${items.join('')}</div>`;
+  return `<div class="art3">${col('Submitted', [k('UKZN', '#d6e4ff', '🎓'), k('NSFAS', '#e6f8ec', '💰')])}${col('In review', [k('UCT', '#fff4e0', '🎓')])}${col('Decision', [k('Sasol', '#ffe8f3', '💰')])}</div>`;
+}
+const SLIDES = [
+  { h:'Apply to Universities and Colleges in One Place', p:'Pick your university, choose your 3 courses and submit your application for just R60.', art: fanArt },
+  { h:'Find and Apply for Bursaries', p:'Browse funding options and apply for bursaries without leaving the app.', art: artBursaries },
+  { h:'Track Every Application', p:'Keep your documents ready and follow the status of each application in one place.', art: artTrack },
+];
+let slide = 0;
+function setSlide(i){
+  slide = i; const s = SLIDES[i];
+  $('#fan').classList.toggle('plain', i > 0);
+  $('#fan').innerHTML = s.art();
+  $('#wh').textContent = s.h; $('#wp').textContent = s.p;
+  $('#wdots').innerHTML = SLIDES.map((_, j) => `<button data-dot="${j}" class="${j === i ? 'on' : ''}" aria-label="Slide ${j + 1}"></button>`).join('');
+  $('#wnext').textContent = i === SLIDES.length - 1 ? 'Get Started' : 'Next';
+}
+function nextSlide(){ if (slide < SLIDES.length - 1) setSlide(slide + 1); else go('signup'); }
+let tx = null;
+$('#welcome').addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+$('#welcome').addEventListener('touchend', e => {
+  if (tx == null) return; const dx = e.changedTouches[0].clientX - tx; tx = null;
+  if (dx < -50) nextSlide(); else if (dx > 50 && slide > 0) setSlide(slide - 1);
+});
+
+/* ---------- Extra click handlers ---------- */
+function extraClick(t){
+  let el;
+  if ((el = t.closest('[data-eye]'))) { const i = el.parentElement.querySelector('input'); const show = i.type === 'password'; i.type = show ? 'text' : 'password'; el.classList.toggle('on', show); return true; }
+  if ((el = t.closest('[data-social]'))) { startSession('olivia@nubize.com'); toast(`Signed in with ${el.dataset.social}`); return true; }
+  if (t.closest('#signout')) { store.del('nubize_session'); user = { name:'Olivia Reiss', email:'olivia@nubize.com' }; go('signin'); toast('Signed out'); return true; }
+  if ((el = t.closest('[data-ndel]'))) { notifs = notifs.filter(n => n.id !== +el.dataset.ndel); renderNotifs(); return true; }
+  if ((el = t.closest('[data-notif]'))) { openNotif(+el.dataset.notif); return true; }
+  if ((el = t.closest('[data-ntab]'))) { ntab = el.dataset.ntab; renderNotifs(); return true; }
+  if (t.closest('#markAll')) { notifs.forEach(n => n.read = true); renderNotifs(); toast('All marked as read'); return true; }
+  if (t.closest('#wnext')) { nextSlide(); return true; }
+  if (t.closest('[data-skip]')) { go('signin'); return true; }
+  if ((el = t.closest('[data-dot]'))) { setSlide(+el.dataset.dot); return true; }
+  if (t.closest('[data-setup]')) { go('setup'); return true; }
+  if (t.closest('#sNext')) { stepNext(); return true; }
+  if (t.closest('#sBack')) { stepBack(); return true; }
+  if (t.closest('#sSkip')) { stepSkip(); return true; }
+  if (t.closest('[data-addsub]')) { const p = getProfile(); collectStep(STEPS[p.step]); p.marks.push({ s:'', m:'' }); renderStepBody(); return true; }
+  if ((el = t.closest('[data-delsub]'))) {
+    const p = getProfile(); collectStep(STEPS[p.step]);
+    const i = $$('.mrow').indexOf(el.closest('.mrow'));
+    if (i > -1 && p.marks.length > 1) p.marks.splice(i, 1);
+    renderStepBody(); return true;
+  }
+  if ((el = t.closest('[data-rmdoc]'))) { const k = el.dataset.rmdoc; delete fileStore[k]; delete getProfile().docs[k]; saveProfile(); renderStepBody(); return true; }
+  if ((el = t.closest('[data-viewdoc]'))) { const f = fileStore[el.dataset.viewdoc]; if (f) window.open(URL.createObjectURL(f), '_blank'); else toast('Re-upload this file to preview it'); return true; }
+  return false;
+}
+
+/* ---------- Student profile setup ---------- */
+const PROVINCES = ['Eastern Cape','Free State','Gauteng','KwaZulu-Natal','Limpopo','Mpumalanga','North West','Northern Cape','Western Cape','Outside South Africa'];
+const SUBJECTS = ['English Home Language','English First Additional Language','isiZulu Home Language','isiXhosa Home Language','Afrikaans Home Language','Afrikaans First Additional Language','Mathematics','Mathematical Literacy','Physical Sciences','Life Sciences','Life Orientation','Geography','History','Accounting','Business Studies','Economics','Information Technology','Computer Applications Technology','Engineering Graphics & Design','Tourism','Consumer Studies','Agricultural Sciences','Visual Arts','Dramatic Arts'];
+const DEFAULT_SUBJECTS = ['English Home Language','Afrikaans First Additional Language','Mathematics','Life Orientation','Physical Sciences','Life Sciences'];
+const DOCS = [
+  { k:'id', t:'ID / passport copy', req:true },
+  { k:'results', t:'Latest academic results', req:true, hint:'Grade 11/12 report or transcript · PDF · max 5 MB' },
+  { k:'residence', t:'Proof of residence', req:false },
+  { k:'motivation', t:'Motivation letter', req:false },
+];
+const fileStore = {};
+let profile = null, profileFor = null;
+function getProfile(){
+  if (profile && profileFor === user.email) return profile;
+  const saved = store.get('nubize_profile_' + user.email, null);
+  const [first, ...rest] = (user.name || '').split(' ');
+  profile = saved || { step:0, completed:[], done:false, personal:{ first, last: rest.join(' ') }, location:{ country:'South Africa' }, academic:{}, marks:null, docs:{}, kin:{ ksame:true } };
+  if (!profile.marks) profile.marks = DEFAULT_SUBJECTS.map(s => ({ s, m:'' }));
+  profileFor = user.email; return profile;
+}
+const saveProfile = () => store.set('nubize_profile_' + user.email, getProfile());
+const pctDone = () => Math.round(getProfile().completed.length / STEPS.length * 100);
+const fmt = b => b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+const digits = v => v.replace(/\D/g, '').length;
+
+function renderBanner(){
+  const p = getProfile(), pct = pctDone();
+  $('#pBanner').style.display = pct < 100 ? 'flex' : 'none';
+  $('#pbTxt').textContent = `${pct}% complete · ${STEPS.length - p.completed.length} step${STEPS.length - p.completed.length === 1 ? '' : 's'} left`;
+  $('#pbFill').style.width = pct + '%';
+}
+
+function F(label, name, o = {}){
+  const v = o.v ?? '';
+  const input = o.select
+    ? `<select name="${name}"><option value="">Select…</option>${o.select.map(x => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>`
+    : `<input name="${name}" type="${o.type || 'text'}" value="${esc(v)}" placeholder="${esc(o.ph || '')}" ${o.attrs || ''}>`;
+  return `<div class="field"><label>${label}${o.req ? ' <em>*</em>' : ''}</label>${input}<div class="err"></div></div>`;
+}
+const CHK = (name, on, text) => `<label class="chk" style="margin:4px 0 14px"><input type="checkbox" name="${name}" ${on ? 'checked' : ''}> <span>${text}</span></label>`;
+function runRules(form, rules){
+  let bad = false;
+  rules.forEach(([name, ok, msg]) => { const v = (form.elements[name].value || '').trim(); bad = fieldErr(form, name, ok(v) ? '' : msg) || bad; });
+  return !bad;
+}
+
+/* Marks */
+const mrow = r => `<div class="mrow"><input name="sub" list="subjects" value="${esc(r.s)}" placeholder="Subject"><input name="mk" type="number" min="0" max="100" inputmode="numeric" value="${esc(r.m)}" placeholder="%"><button type="button" class="nx" data-delsub aria-label="Remove subject">✕</button></div>`;
+function marksBody(p){
+  return `<div class="form"><datalist id="subjects">${SUBJECTS.map(s => `<option value="${esc(s)}">`).join('')}</datalist>
+    <div class="mhead"><span>Subject</span><span>Mark %</span><span></span></div>
+    <div id="marksTable">${p.marks.map(mrow).join('')}</div>
+    <button type="button" class="btn sec2 sm" data-addsub>+ Add subject</button>
+    <div class="err" id="marksErr"></div><div class="msum" id="mSum"></div></div>`;
+}
+function updateMarks(){
+  const el = $('#mSum'); if (!el) return;
+  const rows = $$('.mrow').map(r => ({ s: r.querySelector('[name=sub]').value.trim(), m: parseFloat(r.querySelector('[name=mk]').value) })).filter(r => r.s && !isNaN(r.m) && r.m >= 0 && r.m <= 100);
+  if (!rows.length) { el.textContent = 'Enter your marks to see your average.'; return; }
+  const avg = rows.reduce((a, r) => a + r.m, 0) / rows.length;
+  const pts = m => m >= 80 ? 7 : m >= 70 ? 6 : m >= 60 ? 5 : m >= 50 ? 4 : m >= 40 ? 3 : m >= 30 ? 2 : 1;
+  const aps = rows.filter(r => !/life orientation/i.test(r.s)).map(r => pts(r.m)).sort((a, b) => b - a).slice(0, 6).reduce((a, b) => a + b, 0);
+  el.innerHTML = `Average <b>${avg.toFixed(1)}%</b> · Estimated APS <b>${aps}</b> <span>(best 6, excl. Life Orientation)</span>`;
+}
+
+/* Documents */
+function docsBody(p){
+  return DOCS.map(d => { const f = p.docs[d.k];
+    return `<div class="doc"><div class="dtop"><div class="dic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></div>
+      <div class="dbody"><b>${d.t} ${d.req ? '<em>Required</em>' : '<i>Optional</i>'}</b><span>${d.hint || 'PDF only · max 5 MB'}</span></div>
+      <label class="upl">${f ? 'Replace' : 'Upload'}<input type="file" accept="application/pdf,.pdf" data-docfile="${d.k}" hidden></label></div>
+      ${f ? `<div class="dfile"><span class="ok">✓</span><span class="fn">${esc(f.name)}</span><span class="fs">${fmt(f.size)}</span><button type="button" data-viewdoc="${d.k}">View</button><button type="button" class="nx" data-rmdoc="${d.k}" aria-label="Remove">✕</button></div>` : ''}</div>`;
+  }).join('') + '<div class="err" id="docsErr" style="margin:0 16px"></div>';
+}
+
+const STEPS = [
+  { key:'personal', title:'Personal information', sub:'Tell us a bit about yourself.',
+    body: p => `<div class="two">${F('First name', 'first', { v:p.first, req:1 })}${F('Last name', 'last', { v:p.last, req:1 })}</div>`
+      + F('Date of birth', 'dob', { type:'date', v:p.dob, req:1 })
+      + F('Gender', 'gender', { select:['Female', 'Male', 'Non-binary', 'Prefer not to say'], v:p.gender, req:1 })
+      + F('ID / passport number', 'idno', { v:p.idno, req:1 })
+      + F('Phone number', 'phone', { type:'tel', v:p.phone, req:1, ph:'e.g. 082 123 4567' })
+      + F('Email', 'email', { type:'email', v:user.email, attrs:'readonly' }),
+    rules: [
+      ['first', v => v.length >= 2, 'Enter your first name'], ['last', v => v.length >= 2, 'Enter your last name'],
+      ['dob', v => v && new Date(v) < new Date(), 'Enter a valid date of birth'], ['gender', v => !!v, 'Select an option'],
+      ['idno', v => v.replace(/\s/g, '').length >= 6, 'Enter a valid ID or passport number'], ['phone', v => digits(v) >= 9, 'Enter a valid phone number'],
+    ] },
+  { key:'location', title:'Where you live', sub:'Your current place of residence.',
+    body: p => F('Street address', 'street', { v:p.street, req:1 }) + F('Suburb', 'suburb', { v:p.suburb })
+      + `<div class="two">${F('City / town', 'city', { v:p.city, req:1 })}${F('Postal code', 'postal', { v:p.postal, req:1, attrs:'inputmode="numeric"' })}</div>`
+      + F('Province', 'province', { select:PROVINCES, v:p.province, req:1 }) + F('Country', 'country', { v:p.country || 'South Africa', req:1 }),
+    rules: [
+      ['street', v => v.length >= 3, 'Enter your street address'], ['city', v => v.length >= 2, 'Enter your city or town'],
+      ['postal', v => v.length >= 3, 'Enter your postal code'], ['province', v => !!v, 'Select a province'], ['country', v => v.length >= 2, 'Enter your country'],
+    ] },
+  { key:'academic', title:'Academic background', sub:'Where you studied and what you want to study.',
+    body: p => F('School / institution', 'school', { v:p.school, req:1 })
+      + F('Highest grade / qualification', 'level', { select:['Grade 11', 'Grade 12 (in progress)', 'Matric completed', 'Certificate', 'Diploma', 'Degree (in progress)', 'Degree completed'], v:p.level, req:1 })
+      + `<div class="two">${F('Year completed / expected', 'year', { type:'number', v:p.year, req:1, attrs:'min="2000" max="2040"' })}${F('Qualification type', 'qual', { select:['NSC', 'IEB', 'Other'], v:p.qual, req:1 })}</div>`
+      + F('Intended field of study', 'field', { select:['Engineering', 'Health Sciences', 'Commerce & Management', 'Law', 'Education', 'Information Technology', 'Natural Sciences', 'Humanities & Social Sciences', 'Arts & Design', 'Other'], v:p.field, req:1 })
+      + F('First-choice institution', 'inst', { v:p.inst, ph:'e.g. UKZN, UCT, DUT' })
+      + CHK('bursary', p.bursary, 'I am also applying for a bursary / funding'),
+    rules: [
+      ['school', v => v.length >= 2, 'Enter your school or institution'], ['level', v => !!v, 'Select an option'],
+      ['year', v => +v >= 2000 && +v <= 2040, 'Enter a year between 2000 and 2040'], ['qual', v => !!v, 'Select an option'], ['field', v => !!v, 'Select a field of study'],
+    ] },
+  { key:'marks', title:'Academic marks', sub:'Enter your latest final or term marks (at least 4 subjects).', custom:true, body: marksBody },
+  { key:'docs', title:'Documents', sub:'Upload clear PDF copies of your documents.', custom:true, body: docsBody },
+  { key:'kin', title:'Next of kin', sub:'Someone we can contact on your behalf.',
+    body: p => F('Full name', 'kname', { v:p.kname, req:1 })
+      + F('Relationship', 'rel', { select:['Parent', 'Guardian', 'Sibling', 'Spouse / partner', 'Grandparent', 'Other'], v:p.rel, req:1 })
+      + F('Phone number', 'kphone', { type:'tel', v:p.kphone, req:1 }) + F('Alternative phone', 'kphone2', { type:'tel', v:p.kphone2 })
+      + F('Email', 'kemail', { type:'email', v:p.kemail })
+      + CHK('ksame', p.ksame !== false, 'Lives at the same address as me')
+      + `<div id="kaddrWrap" style="${p.ksame !== false ? 'display:none' : ''}">${F('Address', 'kaddr', { v:p.kaddr })}</div>`
+      + CHK('confirm', p.confirm, 'I confirm that all the information I have provided is true and correct')
+      + '<div class="err" id="confirmErr"></div>',
+    rules: [
+      ['kname', v => v.length >= 2, "Enter their full name"], ['rel', v => !!v, 'Select a relationship'],
+      ['kphone', v => digits(v) >= 9, 'Enter a valid phone number'], ['kemail', v => !v || EMAIL_RE.test(v), 'Enter a valid email address'],
+    ] },
+];
+
+function renderSetup(){
+  const p = getProfile(), s = STEPS[p.step];
+  $('#sCount').textContent = `Step ${p.step + 1} of ${STEPS.length} · ${s.title}`;
+  $('#sFill').style.width = ((p.step + 1) / STEPS.length * 100) + '%';
+  $('#sNext').textContent = p.step === STEPS.length - 1 ? 'Finish' : 'Continue';
+  renderStepBody();
+}
+function renderStepBody(){
+  const p = getProfile(), s = STEPS[p.step];
+  $('#sBody').innerHTML = `<h3>${s.title}</h3><p class="sub2">${s.sub}</p>` + (s.custom ? s.body(p) : `<form id="stepForm" class="form" novalidate>${s.body(p[s.key] || {})}</form>`);
+  if (s.key === 'marks') updateMarks();
+}
+function collectStep(s){
+  const p = getProfile();
+  if (s.key === 'marks') p.marks = $$('.mrow').map(r => ({ s: r.querySelector('[name=sub]').value.trim(), m: r.querySelector('[name=mk]').value.trim() }));
+  else if (s.key !== 'docs') {
+    const form = $('#stepForm'); if (!form) return; const o = {};
+    [...form.elements].forEach(el => { if (el.name) o[el.name] = el.type === 'checkbox' ? el.checked : (el.value || '').trim(); });
+    p[s.key] = Object.assign(p[s.key] || {}, o);
+  }
+}
+function validateStep(s){
+  const p = getProfile();
+  if (s.key === 'marks') {
+    const rows = p.marks.filter(r => r.s || r.m);
+    const isBad = r => !r.s || r.m === '' || isNaN(+r.m) || +r.m < 0 || +r.m > 100;
+    const good = rows.filter(r => !isBad(r)).length;
+    const msg = good < 4 ? 'Enter a mark (0 to 100) for at least 4 subjects' : rows.some(isBad) ? 'Each subject needs a name and a mark from 0 to 100' : '';
+    $('#marksErr').textContent = msg; return !msg;
+  }
+  if (s.key === 'docs') {
+    const miss = DOCS.filter(d => d.req && !p.docs[d.k]);
+    $('#docsErr').textContent = miss.length ? 'Please upload: ' + miss.map(d => d.t).join(', ') : ''; return !miss.length;
+  }
+  const form = $('#stepForm');
+  let ok = runRules(form, s.rules);
+  if (s.key === 'kin') {
+    if (!form.elements.ksame.checked) ok = !fieldErr(form, 'kaddr', form.elements.kaddr.value.trim().length >= 5 ? '' : 'Enter their address') && ok;
+    if (!form.elements.confirm.checked) { $('#confirmErr').textContent = 'Please confirm your details are correct'; ok = false; } else $('#confirmErr').textContent = '';
+  }
+  return ok;
+}
+function stepNext(){
+  const p = getProfile(), s = STEPS[p.step];
+  collectStep(s);
+  if (!validateStep(s)) {
+    saveProfile(); toast('Please fix the highlighted fields');
+    const e = $('#sBody .field.bad, #sBody .err:not(:empty)'); if (e) e.scrollIntoView({ block:'center', behavior:'smooth' });
+    return;
+  }
+  if (!p.completed.includes(p.step)) p.completed.push(p.step);
+  if (p.step < STEPS.length - 1) { p.step++; saveProfile(); renderSetup(); $('#setup').scrollTop = 0; } else finishSetup();
+}
+function stepBack(){
+  const p = getProfile(); collectStep(STEPS[p.step]); saveProfile();
+  if (p.step > 0) { p.step--; renderSetup(); $('#setup').scrollTop = 0; } else go('home');
+}
+function stepSkip(){ const p = getProfile(); collectStep(STEPS[p.step]); saveProfile(); go('home'); toast('Progress saved'); }
+function finishSetup(){
+  const p = getProfile(); p.done = true; p.completed = STEPS.map((_, i) => i); p.step = 0; saveProfile();
+  addNotif('system', 'Profile complete', 'Your student profile is complete and ready for applications.', null);
+  go('home'); toast('Profile complete 🎉');
+}
+document.addEventListener('submit', e => { if (e.target.id === 'stepForm') { e.preventDefault(); stepNext(); } });
+document.addEventListener('input', e => {
+  if (e.target.closest && e.target.closest('#marksTable')) { updateMarks(); const m = $('#marksErr'); if (m) m.textContent = ''; }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.matches && t.matches('[data-docfile]')) {
+    const f = t.files[0]; t.value = ''; if (!f) return;
+    if (!(f.type === 'application/pdf' || /\.pdf$/i.test(f.name))) return toast('Only PDF files are accepted');
+    if (f.size > 5 * 1048576) return toast('File is larger than 5 MB');
+    const k = t.dataset.docfile; fileStore[k] = f; getProfile().docs[k] = { name: f.name, size: f.size };
+    saveProfile(); renderStepBody(); const d = $('#docsErr'); if (d) d.textContent = ''; toast('Document added');
+  }
+  if (t.name === 'ksame') $('#kaddrWrap').style.display = t.checked ? 'none' : '';
+});
+
+
+/* ---------- Applications: universities, colleges & bursaries ---------- */
+const APP_FEE = 60, MAX_COURSES = 3, MAX_BURS = 5;
+const UNIS = [
+  { id:'ukzn', name:'University of KwaZulu-Natal', short:'UKZN', city:'Durban', prov:'KwaZulu-Natal', kind:'University', courses:[
+    ['BSc Computer Science','Science'],['BSc Information Systems & Technology','Science'],['BCom Accounting','Commerce'],['BCom Economics','Commerce'],
+    ['BSc Engineering (Mechanical)','Engineering'],['BSc Engineering (Civil)','Engineering'],['LLB','Law'],['MBChB','Health Sciences'],['Bachelor of Nursing','Health Sciences'],
+    ['BSocSci Psychology','Humanities'],['Bachelor of Education','Education'],['Bachelor of Pharmacy','Health Sciences'] ] },
+  { id:'uct', name:'University of Cape Town', short:'UCT', city:'Cape Town', prov:'Western Cape', kind:'University', courses:[
+    ['BSc Computer Science','Science'],['BBusSc Actuarial Science','Commerce'],['BCom Accounting','Commerce'],['BCom Economics','Commerce'],
+    ['BSc Engineering (Electrical)','Engineering'],['BSc Engineering (Chemical)','Engineering'],['LLB','Law'],['MBChB','Health Sciences'],['BA Film & Media','Humanities'],
+    ['BSocSci Psychology','Humanities'],['BSc Environmental & Geographical Science','Science'],['Bachelor of Architectural Studies','Built Environment'] ] },
+  { id:'wits', name:'University of the Witwatersrand', short:'Wits', city:'Johannesburg', prov:'Gauteng', kind:'University', courses:[
+    ['BSc Computer Science','Science'],['BSc Data Science','Science'],['BCom Accounting Science','Commerce'],['BCom Economics','Commerce'],
+    ['BSc Engineering (Mining)','Engineering'],['BSc Engineering (Electrical)','Engineering'],['LLB','Law'],['MBBCh','Health Sciences'],['BA Psychology','Humanities'],
+    ['BSc Architectural Studies','Built Environment'],['Bachelor of Education','Education'],['BSc Actuarial Science','Science'] ] },
+  { id:'up', name:'University of Pretoria', short:'UP', city:'Pretoria', prov:'Gauteng', kind:'University', courses:[
+    ['BSc Computer Science','Science'],['BCom Accounting Sciences','Commerce'],['BCom Informatics','Commerce'],['BEng Industrial Engineering','Engineering'],
+    ['BEng Civil Engineering','Engineering'],['LLB','Law'],['MBChB','Health Sciences'],['BVSc Veterinary Science','Veterinary Science'],['BA Humanities','Humanities'],
+    ['BSc Agriculture','Agricultural Sciences'],['BEd Foundation Phase','Education'],['BSc Physiotherapy','Health Sciences'] ] },
+  { id:'su', name:'Stellenbosch University', short:'SU', city:'Stellenbosch', prov:'Western Cape', kind:'University', courses:[
+    ['BSc Computer Science','Science'],['BCom Accounting','Economic & Management Sciences'],['BCom Law','Economic & Management Sciences'],['BEng Mechatronic Engineering','Engineering'],
+    ['BEng Electrical & Electronic Engineering','Engineering'],['LLB','Law'],['MBChB','Medicine & Health Sciences'],['BA Social Dynamics','Arts & Social Sciences'],
+    ['BSc Agriculture','AgriSciences'],['BSc Forestry & Wood Science','AgriSciences'],['BEd Senior Phase','Education'] ] },
+  { id:'uj', name:'University of Johannesburg', short:'UJ', city:'Johannesburg', prov:'Gauteng', kind:'University', courses:[
+    ['BSc Computer Science & Informatics','Science'],['BCom Accounting','Commerce'],['BCom Marketing Management','Commerce'],['BEng Technology (Civil)','Engineering'],
+    ['BEng Technology (Electrical)','Engineering'],['LLB','Law'],['BA Psychology','Humanities'],['BA Graphic Design','Art, Design & Architecture'],['BEd Intermediate Phase','Education'],
+    ['Bachelor of Health Sciences (Nursing)','Health Sciences'],['BA Strategic Communication','Humanities'] ] },
+  { id:'ufs', name:'University of the Free State', short:'UFS', city:'Bloemfontein', prov:'Free State', kind:'University', courses:[
+    ['BSc Computer Science','Natural & Agricultural Sciences'],['BCom Accounting','Economic & Management Sciences'],['BCom Economics','Economic & Management Sciences'],
+    ['LLB','Law'],['MBChB','Health Sciences'],['BA Psychology','Humanities'],['BEd Further Education & Training','Education'],['BSc Agriculture','Natural & Agricultural Sciences'],
+    ['BSocSci Social Work','Humanities'],['BSc Geology','Natural & Agricultural Sciences'] ] },
+  { id:'nmu', name:'Nelson Mandela University', short:'NMU', city:'Gqeberha', prov:'Eastern Cape', kind:'University', courses:[
+    ['BSc Computer Science','Science'],['BCom Accounting','Business & Economic Sciences'],['BCom Business Management','Business & Economic Sciences'],['BEng Mechanical Engineering','Engineering'],
+    ['BEng Civil Engineering','Engineering'],['LLB','Law'],['BA Psychology','Humanities'],['BEd Intermediate Phase','Education'],['Bachelor of Nursing','Health Sciences'],
+    ['BSc Marine Biology','Science'] ] },
+  { id:'dut', name:'Durban University of Technology', short:'DUT', city:'Durban', prov:'KwaZulu-Natal', kind:'University of Technology', courses:[
+    ['Diploma in Information & Communication Technology','Accounting & Informatics'],['Diploma in Accounting','Accounting & Informatics'],['Diploma in Civil Engineering','Engineering'],
+    ['Diploma in Electrical Engineering','Engineering'],['Diploma in Hospitality Management','Management Sciences'],['Diploma in Marketing','Management Sciences'],
+    ['Diploma in Journalism','Arts & Design'],['Diploma in Fashion','Arts & Design'],['Diploma in Nursing','Health Sciences'],['Diploma in Radiography','Health Sciences'] ] },
+  { id:'ckzn', name:'Coastal KZN TVET College', short:'CKZN', city:'Durban', prov:'KwaZulu-Natal', kind:'College', courses:[
+    ['NC(V) Information Technology & Computer Science','Vocational'],['NC(V) Engineering & Related Design','Vocational'],['NC(V) Finance, Economics & Accounting','Vocational'],
+    ['NC(V) Tourism','Vocational'],['NC(V) Hospitality','Vocational'],['NC(V) Office Administration','Vocational'],['N4–N6 Business Management','NATED'],
+    ['N4–N6 Electrical Engineering','NATED'],['N4–N6 Hospitality & Catering','NATED'],['N4–N6 Financial Management','NATED'] ] },
+  { id:'bcc', name:'Boston City Campus', short:'BCC', city:'Durban', prov:'KwaZulu-Natal', kind:'College', courses:[
+    ['Higher Certificate in Business Management','Business'],['Diploma in Information Technology','IT'],['Bachelor of Commerce','Business'],['Diploma in Human Resource Management','Business'],
+    ['Higher Certificate in Accounting','Business'],['Diploma in Marketing Management','Business'],['Higher Certificate in Public Relations','Media'] ] },
+  { id:'vc', name:'Varsity College', short:'VC', city:'Durban', prov:'KwaZulu-Natal', kind:'College', courses:[
+    ['BCom Accounting','Commerce'],['BCom Marketing','Commerce'],['BSc Information Technology','IT'],['BA Psychology','Humanities'],['LLB','Law'],
+    ['Higher Certificate in Management','Business'],['Bachelor of Education (Foundation Phase)','Education'] ] },
+];
+
+/* Sample bursary listing: confirm eligibility, requirements and closing dates with each provider */
+const BURS = [
+  { id:'nsfas', short:'NSF', name:'NSFAS Financial Aid', provider:'National Student Financial Aid Scheme', field:'All fields', who:'Qualifying students at public universities and TVET colleges' },
+  { id:'funza', short:'FL', name:'Funza Lushaka Bursary', provider:'Department of Basic Education', field:'Teaching', who:'Students training to become teachers' },
+  { id:'sasol', short:'SAS', name:'Sasol Bursary', provider:'Sasol', field:'Engineering & Science', who:'Strong performers in engineering and science' },
+  { id:'eskom', short:'ESK', name:'Eskom Bursary', provider:'Eskom', field:'Engineering & Technical', who:'Students in engineering and technical fields' },
+  { id:'transnet', short:'TNT', name:'Transnet Bursary', provider:'Transnet', field:'Engineering, Logistics & Finance', who:'Students in engineering, logistics and finance' },
+  { id:'sbsa', short:'SB', name:'Standard Bank Bursary', provider:'Standard Bank', field:'Finance, IT & Actuarial', who:'Students in finance, IT and actuarial science' },
+  { id:'anglo', short:'AA', name:'Anglo American Bursary', provider:'Anglo American', field:'Mining & Engineering', who:'Students in mining and engineering fields' },
+  { id:'ag', short:'AG', name:'Allan Gray Orbis Fellowship', provider:'Allan Gray Orbis Foundation', field:'Entrepreneurship', who:'Students with entrepreneurial and leadership potential' },
+];
+const uniOf = id => UNIS.find(u => u.id === id);
+const bursOf = id => BURS.find(b => b.id === id);
+const loadApps = () => store.get('nubize_apps_' + user.email, []);
+const saveApps = a => store.set('nubize_apps_' + user.email, a);
+const MODES = {
+  study:  { title:'University or college', steps:['Choose university', 'Choose 3 courses', 'Review & pay'] },
+  bursary:{ title:'Bursary', steps:['Choose bursaries', 'Review & submit'] },
+};
+let ap = { mode:'study', step:0, uni:null, courses:[], bursaries:[], kind:'All', q:'', busy:false, ref:'', from:'home' };
+function resetAp(mode){ ap = { mode, step:0, uni:null, courses:[], bursaries:[], kind:'All', q:'', busy:false, ref:'', from: curScreen === 'apply' ? 'home' : curScreen }; }
+function startApply(uniId){
+  if (uniId && loadApps().some(a => a.type !== 'bursary' && a.uni === uniId)) return toast(`You've already applied to ${uniOf(uniId).short}`);
+  resetAp('study'); if (uniId) { ap.uni = uniId; ap.step = 1; } go('apply');
+}
+function startBursary(id){ resetAp('bursary'); if (id) ap.bursaries = [id]; go('apply'); }
+
+const SEARCH_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
+const profNote = () => pctDone() < 100 ? `<div class="apinfo"><span>Your profile is <b>${pctDone()}%</b> complete. Universities and funders may ask for your documents.</span><button data-setup>Finish</button></div>` : '';
+
+function renderApply(){
+  const M = MODES[ap.mode], n = M.steps.length, fin = ap.step >= n;
+  $('#apTitle').textContent = M.title;
+  $('#apProg').style.display = fin ? 'none' : ''; $('#apFoot').style.display = fin ? 'none' : '';
+  if (!fin) { $('#apFill').style.width = ((ap.step + 1) / n * 100) + '%'; $('#apCount').textContent = `Step ${ap.step + 1} of ${n} · ${M.steps[ap.step]}`; }
+  const b = $('#apBody'); let list = false;
+  if (fin) b.innerHTML = successHTML();
+  else if (ap.mode === 'study') {
+    if (ap.step === 0) {
+      list = true;
+      b.innerHTML = `<h3>Choose a university</h3><p class="sub2">Pick one university or college to apply to.</p>
+        <div class="kchips" style="padding-top:12px">${['All', 'Universities', 'Colleges'].map(k => `<button data-apkind="${k}" class="${ap.kind === k ? 'on' : ''}">${k}</button>`).join('')}</div>
+        <div class="apsearch"><label class="search" style="background:#fff">${SEARCH_SVG}<input id="apQ" placeholder="Search by name or city…" autocomplete="off" value="${esc(ap.q)}"></label></div><div id="apList"></div>`;
+    } else if (ap.step === 1) {
+      list = true; const u = uniOf(ap.uni);
+      b.innerHTML = `<h3>Choose 3 courses</h3><p class="sub2">The order you pick them in is your 1st, 2nd and 3rd choice.</p>
+        <div class="apinfo"><span><b>${esc(u.short)}</b> · ${esc(u.name)}</span><button data-apchange>Change</button></div>
+        <div class="apsearch"><label class="search" style="background:#fff">${SEARCH_SVG}<input id="apQ" placeholder="Search courses…" autocomplete="off" value="${esc(ap.q)}"></label></div><div id="apList"></div>`;
+    } else {
+      const u = uniOf(ap.uni);
+      b.innerHTML = `<h3>Review & pay</h3><p class="sub2">Check your choices, then pay the R${APP_FEE} application fee.</p>${profNote()}
+        <div class="apcard"><h4>${esc(u.name)}</h4><div class="ad" style="margin-bottom:6px">${esc(u.city)}, ${esc(u.prov)}</div>
+          ${ap.courses.map((c, i) => `<div class="crs"><i>${i + 1}</i><div>${esc(u.courses[c][0])}<small>${['1st', '2nd', '3rd'][i]} choice · ${esc(u.courses[c][1])}</small></div></div>`).join('')}</div>
+        <div class="apcard"><div class="sumrow"><span>Application fee</span><span>R${APP_FEE.toFixed(2)}</span></div><div class="sumrow tot"><span>Total</span><span>R${APP_FEE.toFixed(2)}</span></div></div>
+        <form id="apPayForm" class="form" novalidate><h4 style="margin-bottom:12px;font-size:15px">Pay by card</h4>
+          ${F('Name on card', 'cname', { ph:'As shown on your card', req:true, attrs:'autocomplete="cc-name"' })}
+          ${F('Card number', 'cnum', { ph:'1234 5678 9012 3456', req:true, attrs:'inputmode="numeric" autocomplete="cc-number" maxlength="23"' })}
+          <div class="two">${F('Expiry', 'cexp', { ph:'MM/YY', req:true, attrs:'inputmode="numeric" autocomplete="cc-exp" maxlength="5"' })}${F('CVV', 'ccvv', { ph:'123', req:true, attrs:'inputmode="numeric" autocomplete="cc-csc" maxlength="4" type="password"' })}</div></form>
+        <p class="demo">🔒 Demo checkout: no real payment is taken and card details are never saved.<br>Use 4242 4242 4242 4242, any future expiry and any CVV.</p>`;
+    }
+  } else {
+    if (ap.step === 0) {
+      list = true;
+      b.innerHTML = `<h3>Choose bursaries</h3><p class="sub2">Pick up to ${MAX_BURS}. Applying is free.</p>
+        <div class="apsearch" style="padding-top:12px"><label class="search" style="background:#fff">${SEARCH_SVG}<input id="apQ" placeholder="Search bursaries or fields…" autocomplete="off" value="${esc(ap.q)}"></label></div><div id="apList"></div>
+        <p class="demo">Sample listing. Confirm requirements and closing dates with each provider.</p>`;
+    } else {
+      b.innerHTML = `<h3>Review & submit</h3><p class="sub2">Check your choices, then submit. There is no fee.</p>${profNote()}
+        <div class="apcard"><h4>${ap.bursaries.length} bursar${ap.bursaries.length === 1 ? 'y' : 'ies'}</h4>
+          ${ap.bursaries.map((id, i) => { const x = bursOf(id); return `<div class="crs"><i>${i + 1}</i><div>${esc(x.name)}<small>${esc(x.provider)} · ${esc(x.field)}</small></div></div>`; }).join('')}</div>
+        <div class="apcard"><div class="sumrow"><span>Application fee</span><span>Free</span></div></div>
+        <div style="margin:14px 14px 0">${CHK('confirm', false, 'I confirm that my details and documents are correct')}<div class="err" id="apConfirmErr"></div></div>`;
+    }
+  }
+  if (list) renderApList();
+  setFooter(); $('#apply').scrollTop = 0;
+}
+function successHTML(){
+  const a = loadApps().find(x => x.ref === ap.ref) || loadApps()[0], bur = a.type === 'bursary';
+  const rows = bur ? a.bursaries.map(id => bursOf(id).name) : a.courses;
+  const where = bur ? 'Bursary application' : uniOf(a.uni).name;
+  return `<div class="okring"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <div class="center"><h3>Application submitted</h3><p class="sub2">${bur ? 'Your bursary application has been submitted.' : `We've received your R${APP_FEE} payment and sent your application to ${esc(uniOf(a.uni).short)}.`}</p></div>
+    <div class="apcard"><div class="sumrow"><span>Reference</span><span><b>${esc(a.ref)}</b></span></div><div class="sumrow"><span>${bur ? 'Type' : 'University'}</span><span>${esc(where)}</span></div><div class="sumrow"><span>Paid</span><span>${a.paid ? 'R' + a.paid.toFixed(2) : 'Free'}</span></div>
+      ${rows.map((c, i) => `<div class="crs"><i>${i + 1}</i><div>${esc(c)}</div></div>`).join('')}</div>
+    <div style="padding:16px 12px 0;display:grid;gap:10px"><button class="btn" data-apdone="apps">View my applications</button><button class="btn sec2" data-apdone="home">Back to home</button></div>`;
+}
+function setFooter(){
+  const n = $('#apNext'); let label = 'Continue', off = false;
+  if (ap.mode === 'study') {
+    if (ap.step === 0) off = !ap.uni;
+    else if (ap.step === 1) { label = `Continue (${ap.courses.length}/${MAX_COURSES} selected)`; off = ap.courses.length !== MAX_COURSES; }
+    else label = `Pay R${APP_FEE}`;
+  } else {
+    if (ap.step === 0) { off = !ap.bursaries.length; label = ap.bursaries.length ? `Continue (${ap.bursaries.length} selected)` : 'Continue'; }
+    else label = 'Submit application';
+  }
+  n.textContent = label; n.classList.toggle('off', off);
+}
+function renderApList(){
+  const q = ap.q.trim().toLowerCase(), box = $('#apList'); if (!box) return;
+  if (ap.mode === 'study' && ap.step === 0) {
+    const done = loadApps().filter(a => a.type !== 'bursary').map(a => a.uni);
+    const list = UNIS.filter(u => (ap.kind === 'All' || (ap.kind === 'Colleges' ? u.kind === 'College' : u.kind !== 'College')) && (!q || (u.name + ' ' + u.short + ' ' + u.city + ' ' + u.prov).toLowerCase().includes(q)));
+    box.innerHTML = list.length ? list.map(u => `<button class="uc ${ap.uni === u.id ? 'sel' : ''} ${done.includes(u.id) ? 'dis' : ''}" data-apuni="${u.id}"><div class="ulogo">${esc(u.short)}</div><div class="ut"><b>${esc(u.name)}</b><small>${esc(u.city)}, ${esc(u.prov)} · ${esc(u.kind)}</small></div>${done.includes(u.id) ? '<span class="atag">Applied</span>' : `<div class="rad">${ap.uni === u.id ? '✓' : ''}</div>`}</button>`).join('') : '<div class="empty2">No matches. Try a different name or city.</div>';
+  } else if (ap.mode === 'study') {
+    const u = uniOf(ap.uni);
+    const list = u.courses.map((c, i) => [c, i]).filter(([c]) => !q || (c[0] + ' ' + c[1]).toLowerCase().includes(q));
+    box.innerHTML = list.length ? list.map(([c, i]) => { const pos = ap.courses.indexOf(i);
+      return `<button class="uc ${pos > -1 ? 'sel' : ''}" data-apcourse="${i}"><div class="ut"><b>${esc(c[0])}</b><span class="fchip">${esc(c[1])}</span></div><div class="rad sq">${pos > -1 ? pos + 1 : ''}</div></button>`; }).join('') : '<div class="empty2">No courses match your search.</div>';
+  } else {
+    const done = loadApps().filter(a => a.type === 'bursary').flatMap(a => a.bursaries);
+    const list = BURS.filter(x => !q || (x.name + ' ' + x.provider + ' ' + x.field).toLowerCase().includes(q));
+    box.innerHTML = list.length ? list.map(x => { const on = ap.bursaries.includes(x.id), was = done.includes(x.id);
+      return `<button class="uc ${on ? 'sel' : ''}" data-apbur="${x.id}"><div class="ulogo" style="background:#e6f8ec;color:#19b84a">${esc(x.short)}</div><div class="ut"><b>${esc(x.name)}</b><small>${esc(x.provider)}</small><span class="fchip">${esc(x.field)}</span></div>${was && !on ? '<span class="atag">Applied</span>' : ''}<div class="rad sq">${on ? '✓' : ''}</div></button>`; }).join('') : '<div class="empty2">No bursaries match your search.</div>';
+  }
+}
+function luhn(n){ let sum = 0, alt = false; for (let i = n.length - 1; i >= 0; i--) { let d = +n[i]; if (alt) { d *= 2; if (d > 9) d -= 9; } sum += d; alt = !alt; } return sum % 10 === 0; }
+function finishApp(rec, notifTitle, notifText){
+  const apps = loadApps(); apps.unshift(rec); saveApps(apps);
+  addNotif('applied', notifTitle, notifText, { go:'myapps' });
+  ap.busy = false; ap.ref = rec.ref; ap.step = MODES[ap.mode].steps.length; renderApply();
+}
+const newRef = () => 'NUB-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+function apNext(){
+  if (ap.busy) return;
+  const last = MODES[ap.mode].steps.length - 1;
+  if (ap.mode === 'study') {
+    if (ap.step === 0) { if (!ap.uni) return toast('Pick a university first'); ap.step = 1; ap.q = ''; return renderApply(); }
+    if (ap.step === 1) { if (ap.courses.length !== MAX_COURSES) return toast(`Pick ${MAX_COURSES - ap.courses.length} more course${MAX_COURSES - ap.courses.length === 1 ? '' : 's'}`); ap.step = 2; return renderApply(); }
+    const form = $('#apPayForm'), f = new FormData(form);
+    const name = (f.get('cname') || '').trim(), num = (f.get('cnum') || '').replace(/\s/g, ''), exp = (f.get('cexp') || '').trim(), cvv = (f.get('ccvv') || '').trim();
+    let bad = false;
+    bad = fieldErr(form, 'cname', name.length >= 2 ? '' : 'Enter the name on your card') || bad;
+    bad = fieldErr(form, 'cnum', /^\d{13,19}$/.test(num) && luhn(num) ? '' : 'Enter a valid card number') || bad;
+    const m = /^(\d{2})\/(\d{2})$/.exec(exp); let okExp = false;
+    if (m) { const mm = +m[1], yy = 2000 + +m[2], now = new Date(); okExp = mm >= 1 && mm <= 12 && (yy > now.getFullYear() || (yy === now.getFullYear() && mm >= now.getMonth() + 1)); }
+    bad = fieldErr(form, 'cexp', okExp ? '' : 'Enter a valid future date') || bad;
+    bad = fieldErr(form, 'ccvv', /^\d{3,4}$/.test(cvv) ? '' : '3 or 4 digits') || bad;
+    if (bad) { toast('Please check your card details'); const e = $('#apBody .field.bad'); if (e) e.scrollIntoView({ block:'center', behavior:'smooth' }); return; }
+    ap.busy = true; $('#apNext').textContent = 'Processing payment…'; $('#apNext').classList.add('off');
+    setTimeout(() => {
+      const u = uniOf(ap.uni), rec = { type:'study', ref:newRef(), uni:u.id, courses: ap.courses.map(i => u.courses[i][0]), paid:APP_FEE, date:new Date().toISOString(), status:'Submitted' };
+      finishApp(rec, 'Application submitted', `${u.short}: ${rec.courses.join(', ')} · Ref ${rec.ref}`); toast('Payment successful 🎉');
+    }, 1600);
+  } else {
+    if (ap.step === 0) { if (!ap.bursaries.length) return toast('Pick at least one bursary'); ap.step = 1; ap.q = ''; return renderApply(); }
+    const ok = $('#apBody [name=confirm]').checked; $('#apConfirmErr').textContent = ok ? '' : 'Please confirm your details are correct';
+    if (!ok) return;
+    ap.busy = true; $('#apNext').textContent = 'Submitting…'; $('#apNext').classList.add('off');
+    setTimeout(() => {
+      const rec = { type:'bursary', ref:newRef(), bursaries:[...ap.bursaries], paid:0, date:new Date().toISOString(), status:'Submitted' };
+      finishApp(rec, 'Bursary application submitted', `${rec.bursaries.map(id => bursOf(id).name).join(', ')} · Ref ${rec.ref}`); toast('Application submitted 🎉');
+    }, 900);
+  }
+}
+function apBack(){
+  if (ap.busy) return;
+  if (ap.step === 0 || ap.step >= MODES[ap.mode].steps.length) return go(ap.from && ap.from !== 'apply' ? ap.from : 'home');
+  ap.step--; ap.q = ''; renderApply();
+}
+
+/* ---------- My applications ---------- */
+let maKind = 'All';
+function appCard(a){
+  const bur = a.type === 'bursary', u = bur ? null : uniOf(a.uni);
+  const rows = bur ? a.bursaries.map(id => `<div class="crs"><i>•</i><div>${esc(bursOf(id).name)}<small>${esc(bursOf(id).provider)}</small></div></div>`)
+                   : a.courses.map((c, i) => `<div class="crs"><i>${i + 1}</i><div>${esc(c)}<small>${['1st', '2nd', '3rd'][i]} choice</small></div></div>`);
+  return `<div class="appc"><div class="ah"><div><b>${bur ? 'Bursary application' : esc(u.name)}</b><div class="aref">${esc(a.ref)} · ${new Date(a.date).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' })} · ${a.paid ? 'R' + a.paid + ' paid' : 'Free'}</div></div><span class="ast">${esc(a.status)}</span></div><div style="margin-top:8px">${rows.join('')}</div></div>`;
+}
+function renderMyApps(){
+  const all = loadApps();
+  $('#maChips').innerHTML = [['All', 'All'], ['study', 'Universities & colleges'], ['bursary', 'Bursaries']].map(([k, l]) => `<button data-makind="${k}" class="${maKind === k ? 'on' : ''}">${l}</button>`).join('');
+  const apps = all.filter(a => maKind === 'All' || (maKind === 'bursary') === (a.type === 'bursary'));
+  $('#maList').innerHTML = (apps.length ? apps.map(appCard).join('') : `<div class="empty2">${all.length ? 'Nothing here yet.' : "You haven't applied anywhere yet."}</div>`)
+    + '<div style="display:grid;gap:10px;margin-top:6px"><button class="btn" data-apply>Apply to university or college</button><button class="btn sec2" data-bursary>Apply for a bursary</button></div>';
+}
+
+/* ---------- Search ---------- */
+function renderSearch(){
+  const q = $('#gq').value.trim().toLowerCase();
+  const us = UNIS.filter(u => !q || (u.name + ' ' + u.short + ' ' + u.city + ' ' + u.prov + ' ' + u.kind).toLowerCase().includes(q));
+  const bs = BURS.filter(b => !q || (b.name + ' ' + b.provider + ' ' + b.field).toLowerCase().includes(q));
+  const done = loadApps().filter(a => a.type !== 'bursary').map(a => a.uni);
+  $('#gResults').innerHTML = (us.length ? `<div class="ngh">Universities & colleges</div>` + us.map(u => `<button class="uc" data-apply="${u.id}"><div class="ulogo">${esc(u.short)}</div><div class="ut"><b>${esc(u.name)}</b><small>${esc(u.city)}, ${esc(u.prov)} · ${esc(u.kind)}</small></div>${done.includes(u.id) ? '<span class="atag">Applied</span>' : '<span style="color:#9aa0a9">›</span>'}</button>`).join('') : '')
+    + (bs.length ? `<div class="ngh">Bursaries</div>` + bs.map(b => `<button class="uc" data-bursary="${b.id}"><div class="ulogo" style="background:#e6f8ec;color:#19b84a">${esc(b.short)}</div><div class="ut"><b>${esc(b.name)}</b><small>${esc(b.provider)} · ${esc(b.field)}</small></div><span style="color:#9aa0a9">›</span></button>`).join('') : '')
+    || '<div class="empty2">No results. Try a different search.</div>';
+}
+
+document.addEventListener('click', e => {
+  const t = e.target; let el;
+  if ((el = t.closest('[data-apply]'))) return startApply(el.dataset.apply || undefined);
+  if ((el = t.closest('[data-bursary]'))) return startBursary(el.dataset.bursary || undefined);
+  if (t.closest('#apNext')) return apNext();
+  if (t.closest('#apBack')) return apBack();
+  if ((el = t.closest('[data-makind]'))) { maKind = el.dataset.makind; return renderMyApps(); }
+  if ((el = t.closest('[data-apkind]'))) { ap.kind = el.dataset.apkind; return renderApply(); }
+  if ((el = t.closest('[data-apuni]'))) {
+    const id = el.dataset.apuni;
+    if (loadApps().some(a => a.type !== 'bursary' && a.uni === id)) return toast(`You've already applied to ${uniOf(id).short}`);
+    if (ap.uni !== id) { ap.uni = id; ap.courses = []; }
+    renderApList(); return setFooter();
+  }
+  if ((el = t.closest('[data-apcourse]'))) {
+    const i = +el.dataset.apcourse, k = ap.courses.indexOf(i);
+    if (k > -1) ap.courses.splice(k, 1);
+    else if (ap.courses.length >= MAX_COURSES) return toast('You can only pick 3. Untick one first.');
+    else ap.courses.push(i);
+    renderApList(); return setFooter();
+  }
+  if ((el = t.closest('[data-apbur]'))) {
+    const id = el.dataset.apbur, k = ap.bursaries.indexOf(id);
+    if (k > -1) ap.bursaries.splice(k, 1);
+    else if (ap.bursaries.length >= MAX_BURS) return toast(`You can pick up to ${MAX_BURS} bursaries`);
+    else ap.bursaries.push(id);
+    renderApList(); return setFooter();
+  }
+  if (t.closest('[data-apchange]')) { ap.step = 0; ap.q = ''; return renderApply(); }
+  if ((el = t.closest('[data-apdone]'))) return go(el.dataset.apdone === 'apps' ? 'myapps' : 'home');
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'apQ') { ap.q = t.value; renderApList(); }
+  if (t.id === 'gq') renderSearch();
+  if (t.name === 'cnum') t.value = t.value.replace(/\D/g, '').slice(0, 19).replace(/(.{4})/g, '$1 ').trim();
+  if (t.name === 'cexp') { let v = t.value.replace(/\D/g, '').slice(0, 4); if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2); t.value = v; }
+  if (t.name === 'ccvv') t.value = t.value.replace(/\D/g, '').slice(0, 4);
+});
+document.addEventListener('submit', e => { if (e.target.id === 'apPayForm') { e.preventDefault(); apNext(); } });
+
+/* ---------- Init ---------- */
+setSlide(0);
+renderNotifs();
+curScreen = 'splash';
+const sess = store.get('nubize_session', null);
+setTimeout(() => {
+  if (curScreen !== 'splash') return;
+  if (sess && accounts[sess]) { user = { name: accounts[sess].name, email: sess }; go('home'); } else go('welcome');
+}, 1600);
+</script>
+</body>
+</html>
